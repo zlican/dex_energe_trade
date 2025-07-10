@@ -1,0 +1,31 @@
+{
+  "data_dir": "D:\\trade-project\\4.RSI波段模型\\数据",
+  "interval": 60,
+  "proxy": "http://127.0.0.1:10809",
+  "rsi_period": 14,
+  "botToken": "8040107823:AAHC_qu5cguJf9BG4NDiUB_nwpgF-bPkJAg",
+  "chatId": "6074996357",
+  "tokens": [
+    {
+      "network": "solana",
+      "token_address": "J3rYdme789g1zAysfbH9oP4zjagvfVM2PX7KJgFDpump",
+      "timeframe": "minute",
+      "aggregate": "1",
+      "description": "blackchain"
+    },
+    {
+      "network": "solana",
+      "token_address": "4bXCaDUciWA5Qj1zmcZ9ryJsoqv4rahKD4r8zYYsbonk",
+      "timeframe": "minute",
+      "aggregate": "1",
+      "description": "baobao"
+    },
+    {
+      "network": "solana",
+      "token_address": "FY7EieWUE7ifbQoABC73w6bxjuRtc53PdJAnojQ3pump",
+      "timeframe": "minute",
+      "aggregate": "1",
+      "description": "loria"
+    }
+  ]
+}
