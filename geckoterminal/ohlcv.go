@@ -65,6 +65,7 @@ func GetOHLCV(network, poolAddress, timeframe string, options map[string]string,
 		requestURL += "?" + params.Encode()
 	}
 
+	fmt.Println(requestURL)
 	// 创建HTTP客户端
 	var client *http.Client
 
