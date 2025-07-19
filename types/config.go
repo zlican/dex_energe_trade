@@ -13,6 +13,7 @@ type Config struct {
 	ChatID           string `json:"chatId"`
 	Url              string `json:"url"`
 	Timeframe        string `json:"timeframe"`
+	OneAggregate     string `json:"1_aggregate"`
 	FiveAggregate    string `json:"5_aggregate"`
 	FifteenAggregate string `json:"15_aggregate"`
 }

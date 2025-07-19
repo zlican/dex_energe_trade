@@ -113,8 +113,8 @@ func FetchPoolAddress(rankList []*types.TokenItem, proxy string, ch chan<- inter
 			}
 
 			token.PoolAddress = poolAddress
-			fmt.Printf("添加代币: %s (%s) - 交易池: %s\n",
-				token.Symbol, token.Address, poolAddress)
+			/* fmt.Printf("添加代币: %s (%s) - 交易池: %s\n",
+			token.Symbol, token.Address, poolAddress) */
 		}()
 	}
 	wg.Wait()

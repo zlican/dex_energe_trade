@@ -2,91 +2,64 @@ package utils
 
 import (
 	"fmt"
-	"onchain-energe-SRSI/geckoterminal"
 	"onchain-energe-SRSI/model"
 	"onchain-energe-SRSI/telegram"
 	"onchain-energe-SRSI/types"
-	"time"
 )
 
 // updateTokenData 更新代币数据
-func UpdateTokenData(id string, data *types.TokenData, config *types.Config) {
+func UpdateTokenData(data *types.TokenData, config *types.Config) {
 	data.Mutex.Lock()
 	defer data.Mutex.Unlock()
 
 	tokenItem := data.TokenItem
 
-	EMA25 := GetEMA25FromDB(model.DB, tokenItem.Symbol)
-	EMA50 := GetEMA50FromDB(model.DB, tokenItem.Symbol)
-	PriceGT_EMA25 := GetPriceGT_EMA25FromDB(model.DB, tokenItem.Symbol)
-
 	// 构建查询参数
 	options := map[string]string{
-		"aggregate":               config.FiveAggregate,
+		"aggregate":               config.OneAggregate,
 		"limit":                   "200", // 只获取最新的几条数据即可
 		"token":                   "base",
 		"currency":                "usd",
 		"include_empty_intervals": "true",
 	}
 
-	// 1.获取OHLCV数据
-	var ohlcvData []geckoterminal.OHLCV
-	var meta *geckoterminal.MetaData
-	var err error
-
-	// 循环尝试获取数据，直到成功或达到最大重试次数
-	maxRetries := 3
-	for i := 0; i < maxRetries; i++ {
-		ohlcvData, meta, err = geckoterminal.GetOHLCV(tokenItem.Chain, tokenItem.PoolAddress, config.Timeframe, options, config.Proxy)
-		if err == nil {
-			// 获取成功，退出循环
-			break
-		}
-		time.Sleep(2 * time.Second) // 等待2秒后重试
-	}
-
-	// 如果最终仍然失败
+	closes, err := GetClosesByAPI(tokenItem, config, options)
 	if err != nil {
-		fmt.Printf("[%s] 多次尝试后获取OHLCV数据失败: %v\n", id, err)
 		return
 	}
+	price := closes[len(closes)-1]
+	EMA25M1 := CalculateEMA(closes, 25)
+	EMA50M1 := CalculateEMA(closes, 50)
+	EMA25M5, EMA50M5, EMA169M5 := Get5MEMAFromDB(model.DB, tokenItem.Symbol)
+	EMA25M15, EMA50M15 := Get15MEMAFromDB(model.DB, tokenItem.Symbol)
+	PriceGT_EMA25 := GetPriceGT_EMA25FromDB(model.DB, tokenItem.Symbol)
+	SRSIM15 := Get15MSRSIFromDB(model.DB, tokenItem.Symbol)
+	SRSIM5 := Get5SRSIFromDB(model.DB, tokenItem.Symbol)
 
-	if len(ohlcvData) == 0 {
-		fmt.Printf("[%s] 未找到OHLCV数据\n", id)
-		return
-	}
+	var up, longUp bool
+	up = PriceGT_EMA25 && EMA25M5 > EMA50M5
+	longUp = EMA25M15 > EMA50M15 && price > EMA169M5
 
-	data.Data = ohlcvData
+	buyCond := SRSIM5 < 25
+	longBuyCond := SRSIM15 < 20 && SRSIM5 < 25
 
-	// 显示代币信息
-	if meta != nil && data.LastUpdated.IsZero() {
-		fmt.Printf("[%s] 代币信息: %s (%s) / %s (%s)\n",
-			id,
-			meta.Base.Name, meta.Base.Symbol,
-			meta.Quote.Name, meta.Quote.Symbol)
-	}
-
-	var closes []float64
-	for _, k := range data.Data {
-		closes = append(closes, k.Close)
-	}
-
-	// 计算SRSI
-	_, k, _ := StochRSIFromClose(closes, config.RSIPeriod, config.StochRSI, config.KPeriod, config.DPeriod)
-
-	// 更新时间
-	data.LastUpdated = time.Now()
-
-	// 获取最新的SRSI值
-	if len(k) > 0 {
-		latestRSI := k[len(k)-1]
-		if latestRSI < 20 && EMA25 > EMA50 {
-			message := fmt.Sprintf("🚀[%s] SRSI: %.2f (%s)",
-				id, latestRSI, geckoterminal.FormatTimestamp(data.Data[len(data.Data)-1].Timestamp))
-			if PriceGT_EMA25 {
-				message += "🚀GT"
-			}
-			telegram.SendMessage(config.BotToken, config.ChatID, message)
+	var status string
+	switch {
+	case up && buyCond:
+		if EMA25M1[len(EMA25M1)-1] > EMA50M1[len(EMA50M1)-1] && price > EMA25M5 {
+			status = "Soon"
+		} else {
+			status = "Wait"
 		}
+		message := fmt.Sprintf("🟢%s (%s)", data.Symbol, status)
+		messageAdd := data.TokenItem.Address
+		telegram.SendMessage(config.BotToken, config.ChatID, message)
+		telegram.SendMessage(config.BotToken, config.ChatID, messageAdd)
+	case longUp && longBuyCond:
+		message := fmt.Sprintf("🟢%s (longUp)", data.Symbol)
+		messageAdd := data.TokenItem.Address
+		telegram.SendMessage(config.BotToken, config.ChatID, message)
+		telegram.SendMessage(config.BotToken, config.ChatID, messageAdd)
 	}
+
 }

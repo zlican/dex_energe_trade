@@ -40,14 +40,13 @@ func Update15minEMA25ToDB(db *sql.DB, symbol string, data *types.TokenData, conf
 	}
 
 	// 如果最终仍然失败
-	if err != nil {
+	if err != nil || len(ohlcvData) == 0 {
 		fmt.Printf("[%s] 多次尝试后获取OHLCV数据失败: %v\n", symbol, err)
 		return
-	}
-
-	if len(ohlcvData) == 0 {
-		fmt.Printf("[%s] 未找到OHLCV数据\n", symbol)
-		return
+	} else {
+		for i, j := 0, len(ohlcvData)-1; i < j; i, j = i+1, j-1 {
+			ohlcvData[i], ohlcvData[j] = ohlcvData[j], ohlcvData[i]
+		}
 	}
 
 	var closes []float64
@@ -59,43 +58,36 @@ func Update15minEMA25ToDB(db *sql.DB, symbol string, data *types.TokenData, conf
 	ema50 := CalculateEMA(closes, 50)
 
 	currentPrice := closes[len(closes)-1]
-	lastEMA := ema25[len(ema25)-1]
+	lastEMA25 := ema25[len(ema25)-1]
+	lastEMA50 := ema50[len(ema50)-1]
 	lastTime := ohlcvData[len(ohlcvData)-1].Timestamp
+	_, kLine, _ := StochRSIFromClose(closes, 14, 14, 3, 3)
+	lastKLine := kLine[len(kLine)-1]
 
 	// 写入数据库（UPSERT）
 	_, err = model.DB.Exec(`
-		INSERT INTO symbol_ema_15min (symbol, timestamp, ema25, ema50, price_gt_ema25)
-		VALUES (?, ?, ?, ?, ?)
+		INSERT INTO symbol_ema_15min (symbol, timestamp, ema25, ema50, srsi, price_gt_ema25)
+		VALUES (?, ?, ?, ?, ?, ?)
 		ON DUPLICATE KEY UPDATE
 		timestamp = VALUES(timestamp),
 		ema25 = VALUES(ema25),
 		ema50 = VALUES(ema50),
+		srsi = VALUES(srsi),
 		price_gt_ema25 = VALUES(price_gt_ema25)
-	`, symbol, lastTime, lastEMA, ema50[len(ema50)-1], currentPrice > lastEMA)
+	`, symbol, lastTime, lastEMA25, lastEMA50, lastKLine, currentPrice > lastEMA25)
 	if err != nil {
 		log.Printf("写入出错 %s: %v", symbol, err)
 	}
 
 }
 
-func GetEMA25FromDB(db *sql.DB, symbol string) float64 {
-	var ema25 float64
-	err := db.QueryRow("SELECT ema25 FROM symbol_ema_15min WHERE symbol = ?", symbol).Scan(&ema25)
+func Get15MEMAFromDB(db *sql.DB, symbol string) (ema25, ema50 float64) {
+	err := db.QueryRow("SELECT ema25, ema50 FROM symbol_ema_15min WHERE symbol = ?", symbol).Scan(&ema25, &ema50)
 	if err != nil {
-		log.Printf("查询 EMA25 失败 %s: %v", symbol, err)
-		return 0
+		log.Printf("查询 15MEMA 失败 %s: %v", symbol, err)
+		return 0, 0
 	}
-	return ema25
-}
-
-func GetEMA50FromDB(db *sql.DB, symbol string) float64 {
-	var ema50 float64
-	err := db.QueryRow("SELECT ema50 FROM symbol_ema_15min WHERE symbol = ?", symbol).Scan(&ema50)
-	if err != nil {
-		log.Printf("查询 EMA50 失败 %s: %v", symbol, err)
-		return 0
-	}
-	return ema50
+	return ema25, ema50
 }
 
 func GetPriceGT_EMA25FromDB(db *sql.DB, symbol string) bool {
@@ -106,4 +98,13 @@ func GetPriceGT_EMA25FromDB(db *sql.DB, symbol string) bool {
 		return false
 	}
 	return priceGT_EMA25
+}
+
+func Get15MSRSIFromDB(db *sql.DB, symbol string) (srsi float64) {
+	err := db.QueryRow("SELECT srsi FROM symbol_ema_15min WHERE symbol = ?", symbol).Scan(&srsi)
+	if err != nil {
+		log.Printf("查询 1HSRSIFromDB 失败 %s: %v", symbol, err)
+		return 0
+	}
+	return srsi
 }
