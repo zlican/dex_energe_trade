@@ -38,6 +38,7 @@ func FetchRankData(Fetchurl string, proxy string) ([]*types.TokenItem, error) {
 	req.Header.Set("Referer", "https://gmgn.ai/")
 	req.Header.Set("Origin", "https://gmgn.ai")
 	req.Header.Set("Connection", "keep-alive")
+	req.Header.Set("Cookie", `GMGN_LOCALE=zh-CN; GMGN_THEME=dark; GMGN_CHAIN=sol; __cf_bm=2fZWEehEkb16k57bergBUIFkdSmYDt1Nrjos0Q86mUM-1752998680-1.0.1.1-Mb94_MpiihfvQqi5xtgHYoRqOvZpRRGVl5iDicBIN.v_c1cDFD3MS.f3RyRDRdO0sx7vdxp8ESiR4687B0N5FehoCl20Y1VFBFMrSdYNZrQ; sid=gmgn%7Cc2f113e7ee67f4b9342e7b8b206283c2; cf_clearance=.puB7RDod2jcP1dQdlYiMMVUhDUEoVjUEWJuqWbN2Hk-1752999160-1.2.1.1-QNnN28rkP2i1L37JGP97Cs5SxH9ArFibZFhUya5LkqY2Ushd9Ag5L60ln9fsVZWFobUfLCcVlCeTw44AwjlAy2PZc5_X6Ink1WJNMyT8pSmBYD4LtCzDUS7mDGwVG7OyGqL3N2R6RXjwFISsY1uri.7Ujpc4bIX_719zeYTfNu1rjb66vH0chm.PcKIr1Ey3Os8MzLnCP1Lca2mJNvN0TziTzwK4vpCTrXaqJQZyZtg`)
 
 	// 使用带超时的客户端
 	proxyURL, err := url.Parse(proxy)

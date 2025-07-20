@@ -2,6 +2,7 @@ package utils
 
 import (
 	"fmt"
+	"log"
 	"onchain-energe-SRSI/model"
 	"onchain-energe-SRSI/telegram"
 	"onchain-energe-SRSI/types"
@@ -51,15 +52,25 @@ func UpdateTokenData(data *types.TokenData, config *types.Config) {
 		} else {
 			status = "Wait"
 		}
-		message := fmt.Sprintf("🟢%s (%s)", data.Symbol, status)
-		messageAdd := data.TokenItem.Address
-		telegram.SendMessage(config.BotToken, config.ChatID, message)
-		telegram.SendMessage(config.BotToken, config.ChatID, messageAdd)
+		msg := fmt.Sprintf(
+			"🟢%s (%s)\n📬 Address:\n`%s`",
+			data.Symbol, status, data.TokenItem.Address,
+		)
+
+		err := telegram.SendMarkdownMessage(config.BotToken, config.ChatID, msg)
+		if err != nil {
+			log.Println("发送失败:", err)
+		}
 	case longUp && longBuyCond:
-		message := fmt.Sprintf("🟢%s (longUp)", data.Symbol)
-		messageAdd := data.TokenItem.Address
-		telegram.SendMessage(config.BotToken, config.ChatID, message)
-		telegram.SendMessage(config.BotToken, config.ChatID, messageAdd)
+		msg := fmt.Sprintf(
+			"🟢%s (longBuy)\n📬 Address:\n`%s`",
+			data.Symbol, data.TokenItem.Address,
+		)
+
+		err := telegram.SendMarkdownMessage(config.BotToken, config.ChatID, msg)
+		if err != nil {
+			log.Println("发送失败:", err)
+		}
 	}
 
 }
