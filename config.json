@@ -7,7 +7,7 @@
   "d_period": 3,
   "botToken": "8131367354:AAFDwI2RrW7hcwRE364phlXlqgt2DQYuY_4", 
   "chatId": "6074996357",
-  "url": "https://gmgn.ai/defi/quotation/v1/rank/sol/swaps/1h?device_id=c244267e-b4fe-4e31-94bf-4828472cc03e&client_id=gmgn_web_20250709-940-10907f4&from_app=gmgn&app_ver=20250709-940-10907f4&tz_name=Asia%2FShanghai&tz_offset=28800&app_lang=zh-CN&fp_did=7d3f6211c4665ac29aabc0cabef54142&os=web&orderby=volume&direction=desc&filters[]=renounced&filters[]=frozen&filters[]=distribed&filters[]=not_wash_trading&platforms[]=pump&platforms[]=pumpamm&platforms[]=moonshot&platforms[]=raydium&platforms[]=meteora&platforms[]=fluxbeam&platforms[]=orca&platforms[]=ray_launchpad&platforms[]=boop&platforms[]=letsbonk&min_created=376m&min_marketcap=200000&max_marketcap=15000000&min_holder_count=2000&min_volume=10000",
+  "url": "https://gmgn.ai/defi/quotation/v1/rank/sol/swaps/1h?device_id=c244267e-b4fe-4e31-94bf-4828472cc03e&client_id=gmgn_web_20250719-1295-1872190&from_app=gmgn&app_ver=20250719-1295-1872190&tz_name=Asia%2FShanghai&tz_offset=28800&app_lang=zh-CN&fp_did=7d3f6211c4665ac29aabc0cabef54142&os=web&orderby=holder_count&direction=desc&filters[]=renounced&filters[]=frozen&filters[]=distribed&filters[]=not_wash_trading&platforms[]=pump&platforms[]=pumpamm&platforms[]=moonshot&platforms[]=raydium&platforms[]=meteora&platforms[]=fluxbeam&platforms[]=orca&platforms[]=ray_launchpad&platforms[]=boop&platforms[]=letsbonk&min_created=376m&min_marketcap=200000&max_marketcap=15000000&min_holder_count=2000&min_swaps=1000&min_volume=200000",
   "timeframe": "minute",
   "1_aggregate": "1",
   "5_aggregate": "5",
