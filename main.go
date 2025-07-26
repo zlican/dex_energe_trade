@@ -22,6 +22,10 @@ var (
 	tokenDataMutex sync.Mutex // 用于保护 tokenDataMap
 )
 
+var (
+	onchain_waiting_bot_token = "8389283907:AAFLshQSgAaiGKSISTg1N59DAgLp1OLs158"
+)
+
 func main() {
 	model.InitDB()
 	configFilePtr := flag.String("config", "config.json", "配置文件路径")
@@ -33,11 +37,21 @@ func main() {
 		fmt.Printf("加载配置文件失败: %v\n", err)
 		os.Exit(1)
 	}
+	resultsChan := make(chan types.TokenItem, 100)
 
+	// 启动等待区监控协程
+	go utils.WaitEnerge(
+		resultsChan,
+		model.DB,
+		config.BotToken, // 成功触发推送的 bot
+		config.ChatID,
+		onchain_waiting_bot_token, // 等待区列表推送的 bot
+		config,
+	)
 	go func() {
 		// ✅ 首次立即执行
 		fmt.Printf("[runScan] 首次立即执行: %s\n", time.Now().Format("15:04:05"))
-		runScan()
+		runScan(resultsChan)
 
 		// ✅ 计算下一次 minute%5==0 的对齐时间
 		now := time.Now()
@@ -55,12 +69,12 @@ func main() {
 			time.Sleep(delay)
 
 			fmt.Printf("[runScan] 对齐执行: %s\n", time.Now().Format("15:04:05"))
-			runScan()
+			runScan(resultsChan)
 
 			ticker := time.NewTicker(5 * time.Minute)
 			for t := range ticker.C {
 				fmt.Printf("[runScan] 周期触发: %s\n", t.Format("15:04:05"))
-				runScan()
+				runScan(resultsChan)
 			}
 		}()
 	}()
@@ -73,7 +87,7 @@ func main() {
 	fmt.Println("程序已退出")
 }
 
-func runScan() {
+func runScan(resultsChan chan types.TokenItem) {
 	fmt.Println("开始执行 runScan...")
 
 	var (
@@ -136,7 +150,7 @@ func runScan() {
 
 			utils.Update5minEMA25ToDB(model.DB, symbol, data, config)
 			utils.Update15minEMA25ToDB(model.DB, symbol, data, config)
-			utils.AnaylySymbol(data, config)
+			utils.AnaylySymbol(data, config, resultsChan)
 
 			fmt.Printf("监控并更新: %s\n", symbol)
 		}(symbol, data)
