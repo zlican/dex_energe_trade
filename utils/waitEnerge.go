@@ -38,7 +38,7 @@ func sendWaitListBroadcast(now time.Time, waiting_token, chatID string) {
 
 	for _, token := range waitList {
 		emoje = "🟢"
-		msgBuilder.WriteString(fmt.Sprintf("%s %-12s	加入: %s\n📬 Address:\n`%s`\n", emoje, token.Symbol, token.AddedAt.Format("15:04"), token.TokenItem.Address))
+		msgBuilder.WriteString(fmt.Sprintf("%s %-12s	加入: %s\n📬 `%s`\n", emoje, token.Symbol, token.AddedAt.Format("15:04"), token.TokenItem.Address))
 	}
 	msg := msgBuilder.String()
 	log.Printf("📤 推送等待区更新列表，共 %d 个代币", len(waitList))
@@ -81,10 +81,11 @@ func WaitEnerge(resultsChan chan types.TokenItem, db *sql.DB, wait_sucess_token,
 					if err != nil {
 						return
 					}
+					Price := closesM1[len(closesM1)-1]
 					EMA25M1 := CalculateEMA(closesM1, 25)
 					EMA50M1 := CalculateEMA(closesM1, 50)
 					EMA25M5, EMA50M5, _ := Get5MEMAFromDB(model.DB, token.Symbol)
-					EMA25M15, EMA50M15 := Get15MEMAFromDB(model.DB, token.Symbol)
+					EMA25M15, _ := Get15MEMAFromDB(model.DB, token.Symbol)
 					UpMACDM1 := IsAboutToGoldenCross(closesM1, 6, 13, 5)
 
 					optionsM5 := map[string]string{
@@ -101,8 +102,8 @@ func WaitEnerge(resultsChan chan types.TokenItem, db *sql.DB, wait_sucess_token,
 					UpMACDM5 := IsAboutToGoldenCross(closesM5, 6, 13, 5)
 
 					Condition1 := EMA25M1[len(EMA25M1)-1] > EMA50M1[len(EMA50M1)-1]
-					if EMA25M15 > EMA50M15 && EMA25M5 > EMA50M5 && UpMACDM5 && Condition1 && UpMACDM1 {
-						msg := fmt.Sprintf("🟢%s \n价格：%.4f  时间：%s\n📬 Address:\n`%s`", sym, token.TokenItem.Price, now.Format("15:04"), token.TokenItem.Address)
+					if Price > EMA25M15 && EMA25M5 > EMA50M5 && UpMACDM5 && Condition1 && UpMACDM1 {
+						msg := fmt.Sprintf("🟢%s \n价格：%.4f  时间：%s\n📬 `%s`", sym, token.TokenItem.Price, now.Format("15:04"), token.TokenItem.Address)
 						telegram.SendMarkdownMessage(wait_sucess_token, chatID, msg)
 						log.Printf("🟢 等待成功 Buy : %s", sym)
 						waitMu.Lock()
