@@ -30,12 +30,12 @@ func AnaylySymbol(data *types.TokenData, config *types.Config, resultsChan chan 
 	price := closesM5[len(closesM5)-1]
 
 	EMA25M5, EMA50M5, _ := Get5MEMAFromDB(model.DB, tokenItem.Symbol)
-	EMA25M15, _ := Get15MEMAFromDB(model.DB, tokenItem.Symbol)
+	EMA25M15, EMA50M15 := Get15MEMAFromDB(model.DB, tokenItem.Symbol)
 	SRSIM5 := Get5SRSIFromDB(model.DB, tokenItem.Symbol)
 
 	UpMACDM5 := IsAboutToGoldenCross(closesM5, 6, 13, 5)
 
-	up := price > EMA25M15 && EMA25M5 > EMA50M5
+	up := price > EMA25M15 && EMA25M15 > EMA50M15 && EMA25M5 > EMA50M5
 	buyCond := SRSIM5 < 35
 
 	// ===== 获取1分钟EMA（仅当需要时调用，减少API消耗） =====
