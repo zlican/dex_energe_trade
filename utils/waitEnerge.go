@@ -87,19 +87,7 @@ func WaitEnerge(resultsChan chan types.TokenItem, db *sql.DB, wait_sucess_token,
 					EMA25M5, EMA50M5, _ := Get5MEMAFromDB(model.DB, token.Symbol)
 					EMA25M15, EMA50M15 := Get15MEMAFromDB(model.DB, token.Symbol)
 					UpMACDM1 := IsAboutToGoldenCross(closesM1, 6, 13, 5)
-
-					optionsM5 := map[string]string{
-						"aggregate":               config.FiveAggregate,
-						"limit":                   "200", // 只获取最新的几条数据即可
-						"token":                   "base",
-						"currency":                "usd",
-						"include_empty_intervals": "true",
-					}
-					closesM5, err := GetClosesByAPI(token.TokenItem, config, optionsM5)
-					if err != nil {
-						return
-					}
-					UpMACDM5 := IsAboutToGoldenCross(closesM5, 6, 13, 5)
+					UpMACDM5 := GetUpMACDFromDB(model.DB, token.Symbol)
 
 					Condition1 := EMA25M1[len(EMA25M1)-1] > EMA50M1[len(EMA50M1)-1]
 					if Price > EMA25M15 && EMA25M15 > EMA50M15 && EMA25M5 > EMA50M5 && UpMACDM5 && Condition1 && UpMACDM1 {

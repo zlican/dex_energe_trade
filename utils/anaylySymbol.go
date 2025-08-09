@@ -15,29 +15,6 @@ func AnaylySymbol(data *types.TokenData, config *types.Config, resultsChan chan 
 
 	tokenItem := data.TokenItem
 
-	// ===== 获取5分钟数据 =====
-	optionsM5 := map[string]string{
-		"aggregate":               config.FiveAggregate,
-		"limit":                   "200",
-		"token":                   "base",
-		"currency":                "usd",
-		"include_empty_intervals": "true",
-	}
-	closesM5, err := GetClosesByAPI(tokenItem, config, optionsM5)
-	if err != nil || len(closesM5) < 2 {
-		return
-	}
-	price := closesM5[len(closesM5)-1]
-
-	EMA25M5, EMA50M5, _ := Get5MEMAFromDB(model.DB, tokenItem.Symbol)
-	EMA25M15, EMA50M15 := Get15MEMAFromDB(model.DB, tokenItem.Symbol)
-	SRSIM5 := Get5SRSIFromDB(model.DB, tokenItem.Symbol)
-
-	UpMACDM5 := IsAboutToGoldenCross(closesM5, 6, 13, 5)
-
-	up := price > EMA25M15 && EMA25M15 > EMA50M15 && EMA25M5 > EMA50M5
-	buyCond := SRSIM5 < 35
-
 	// ===== 获取1分钟EMA（仅当需要时调用，减少API消耗） =====
 	get1MData := func() ([]float64, []float64, []float64, bool) {
 		optionsM1 := map[string]string{
@@ -60,6 +37,16 @@ func AnaylySymbol(data *types.TokenData, config *types.Config, resultsChan chan 
 		return
 	}
 	UpMACDM1 := IsAboutToGoldenCross(closesM1, 6, 13, 5)
+
+	price := closesM1[len(closesM1)-1]
+
+	EMA25M5, EMA50M5, _ := Get5MEMAFromDB(model.DB, tokenItem.Symbol)
+	EMA25M15, EMA50M15 := Get15MEMAFromDB(model.DB, tokenItem.Symbol)
+	SRSIM5 := Get5SRSIFromDB(model.DB, tokenItem.Symbol)
+	UpMACDM5 := GetUpMACDFromDB(model.DB, tokenItem.Symbol)
+
+	up := price > EMA25M15 && EMA25M15 > EMA50M15 && EMA25M5 > EMA50M5
+	buyCond := SRSIM5 < 35
 
 	// ===== 模型1（优先级最高） =====
 	if up && buyCond {
