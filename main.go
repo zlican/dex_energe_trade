@@ -1,14 +1,19 @@
 package main
 
 import (
+	"encoding/json"
 	"flag"
 	"fmt"
+	"log"
+	"net/http"
 	"onchain-energe-SRSI/geckoterminal"
 	"onchain-energe-SRSI/model"
+	"onchain-energe-SRSI/telegram"
 	"onchain-energe-SRSI/types"
 	"onchain-energe-SRSI/utils"
 	"os"
 	"os/signal"
+	"strconv"
 	"strings"
 	"sync"
 	"syscall"
@@ -27,6 +32,15 @@ var (
 )
 
 func main() {
+	mux := http.NewServeMux()
+	mux.HandleFunc("/api/latest-tg-messages", latestMessagesHandler)
+
+	go func() {
+		if err := http.ListenAndServe(":8889", corsMiddleware(mux)); err != nil {
+			log.Fatalf("HTTP服务器启动失败: %v", err)
+		}
+	}()
+
 	model.InitDB()
 	configFilePtr := flag.String("config", "config.json", "配置文件路径")
 	flag.Parse()
@@ -157,4 +171,33 @@ func runScan(resultsChan chan types.TokenItem) {
 	}
 
 	wg.Wait()
+}
+
+func latestMessagesHandler(w http.ResponseWriter, r *http.Request) {
+	// 参数limit，默认25
+	limit := 25
+	if l := r.URL.Query().Get("limit"); l != "" {
+		if v, err := strconv.Atoi(l); err == nil && v > 0 {
+			limit = v
+		}
+	}
+
+	msgs := telegram.GetLatestMessages(limit)
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(msgs)
+}
+
+func corsMiddleware(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Access-Control-Allow-Origin", "*")
+		w.Header().Set("Access-Control-Allow-Methods", "GET, OPTIONS")
+		w.Header().Set("Access-Control-Allow-Headers", "Content-Type")
+
+		if r.Method == http.MethodOptions {
+			w.WriteHeader(http.StatusOK)
+			return
+		}
+
+		next.ServeHTTP(w, r)
+	})
 }
