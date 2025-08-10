@@ -42,7 +42,7 @@ func sendWaitListBroadcast(now time.Time, waiting_token, chatID string) {
 	}
 	msg := msgBuilder.String()
 	log.Printf("📤 推送等待区更新列表，共 %d 个代币", len(waitList))
-	telegram.SendMarkdownMessage(waiting_token, chatID, msg)
+	telegram.SendMarkdownMessageWaiting(waiting_token, chatID, msg)
 }
 
 func waitUntilNext1Min() time.Duration {
