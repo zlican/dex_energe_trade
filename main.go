@@ -162,11 +162,18 @@ func runScan(resultsChan chan types.TokenItem) {
 			sem <- struct{}{}
 			defer func() { <-sem }()
 
-			utils.Update5minEMA25ToDB(model.DB, symbol, data, config)
-			utils.Update15minEMA25ToDB(model.DB, symbol, data, config)
+			BoolM15 := utils.Update15minEMA25ToDB(model.DB, symbol, data, config)
+			if !BoolM15 {
+				return
+			}
+
+			BoolM5 := utils.Update5minEMA25ToDB(model.DB, symbol, data, config)
+			if !BoolM5 {
+				return
+			}
 			utils.AnaylySymbol(data, config, resultsChan)
 
-			fmt.Printf("监控并更新: %s\n", symbol)
+			fmt.Printf("分析成功: %s\n", symbol)
 		}(symbol, data)
 	}
 

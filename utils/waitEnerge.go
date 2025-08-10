@@ -106,7 +106,7 @@ func WaitEnerge(resultsChan chan types.TokenItem, db *sql.DB, wait_sucess_token,
 						delete(waitList, sym)
 						waitMu.Unlock()
 						changed = true
-					} else if EMA25M5 < EMA50M5 {
+					} else if EMA25M5 < EMA50M5 || price < EMA25M15 || EMA25M15 < EMA50M15 {
 						log.Printf("❌ Wait失败 Buy : %s", sym)
 						waitMu.Lock()
 						delete(waitList, sym)

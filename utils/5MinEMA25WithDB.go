@@ -11,7 +11,7 @@ import (
 	"onchain-energe-SRSI/types"
 )
 
-func Update5minEMA25ToDB(db *sql.DB, symbol string, data *types.TokenData, config *types.Config) {
+func Update5minEMA25ToDB(db *sql.DB, symbol string, data *types.TokenData, config *types.Config) bool {
 
 	tokenItem := data.TokenItem
 
@@ -42,7 +42,7 @@ func Update5minEMA25ToDB(db *sql.DB, symbol string, data *types.TokenData, confi
 	// 如果最终仍然失败
 	if err != nil || len(ohlcvData) == 0 {
 		fmt.Printf("[%s] 多次尝试后获取OHLCV数据失败: %v\n", symbol, err)
-		return
+		return false
 	} else {
 		for i, j := 0, len(ohlcvData)-1; i < j; i, j = i+1, j-1 {
 			ohlcvData[i], ohlcvData[j] = ohlcvData[j], ohlcvData[i]
@@ -82,6 +82,10 @@ func Update5minEMA25ToDB(db *sql.DB, symbol string, data *types.TokenData, confi
 		log.Printf("写入出错 %s: %v", symbol, err)
 	}
 
+	if lastEMA25 < lastEMA50 {
+		return false
+	}
+	return true
 }
 
 func Get5MEMAFromDB(db *sql.DB, symbol string) (ema25, ema50, ema169 float64) {
