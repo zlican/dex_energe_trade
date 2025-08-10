@@ -91,7 +91,7 @@ func WaitEnerge(resultsChan chan types.TokenItem, db *sql.DB, wait_sucess_token,
 
 					Condition1 := EMA25M1[len(EMA25M1)-1] > EMA50M1[len(EMA50M1)-1]
 					if Price > EMA25M15 && EMA25M15 > EMA50M15 && EMA25M5 > EMA50M5 && UpMACDM5 && Condition1 && UpMACDM1 {
-						msg := fmt.Sprintf("🟢%s \n价格：%.4f  时间：%s\n📬 `%s`", sym, token.TokenItem.Price, now.Format("15:04"), token.TokenItem.Address)
+						msg := fmt.Sprintf("🟢%s\n📬 `%s`", sym, token.TokenItem.Address)
 						telegram.SendMarkdownMessage(wait_sucess_token, chatID, msg)
 						log.Printf("🟢 等待成功 Buy : %s", sym)
 						waitMu.Lock()
