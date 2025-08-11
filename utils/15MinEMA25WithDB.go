@@ -11,7 +11,7 @@ import (
 	"onchain-energe-SRSI/types"
 )
 
-func Update15minEMA25ToDB(db *sql.DB, symbol string, data *types.TokenData, config *types.Config) bool {
+func Update15minEMA25ToDB(db *sql.DB, symbol string, data *types.TokenData, config *types.Config) (UPEMA, GT bool) {
 
 	tokenItem := data.TokenItem
 
@@ -42,7 +42,7 @@ func Update15minEMA25ToDB(db *sql.DB, symbol string, data *types.TokenData, conf
 	// 如果最终仍然失败
 	if err != nil || len(ohlcvData) == 0 {
 		fmt.Printf("[%s] 多次尝试后获取OHLCV数据失败: %v\n", symbol, err)
-		return false
+		return false, false
 	} else {
 		for i, j := 0, len(ohlcvData)-1; i < j; i, j = i+1, j-1 {
 			ohlcvData[i], ohlcvData[j] = ohlcvData[j], ohlcvData[i]
@@ -53,8 +53,7 @@ func Update15minEMA25ToDB(db *sql.DB, symbol string, data *types.TokenData, conf
 	for _, k := range ohlcvData {
 		closes = append(closes, k.Close)
 	}
-
-	price := closes[len(closes)-1]
+	price := closes[len(closes)]
 	ema25 := CalculateEMA(closes, 25)
 	ema50 := CalculateEMA(closes, 50)
 
@@ -80,10 +79,11 @@ func Update15minEMA25ToDB(db *sql.DB, symbol string, data *types.TokenData, conf
 		log.Printf("写入出错 %s: %v", symbol, err)
 	}
 
-	if price < lastEMA25 || lastEMA25 < lastEMA50 {
-		return false
-	}
-	return true
+	UPEMA = lastEMA25 > lastEMA50
+	GT = price > lastEMA25
+
+	return UPEMA, GT
+
 }
 
 func Get15MEMAFromDB(db *sql.DB, symbol string) (ema25, ema50 float64) {

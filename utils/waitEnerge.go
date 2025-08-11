@@ -86,7 +86,7 @@ func WaitEnerge(resultsChan chan types.TokenItem, db *sql.DB, wait_sucess_token,
 					EMA25M5, EMA50M5, _ := Get5MEMAFromDB(model.DB, token.Symbol)
 					EMA25M15, EMA50M15 := Get15MEMAFromDB(model.DB, token.Symbol)
 					//MACD模型
-					UpMACDM5 := GetUpMACDFromDB(model.DB, token.Symbol)
+					UpMACDM5, _ := GetMACDFromDB(model.DB, token.Symbol)
 					UpMACDM1 := IsAboutToGoldenCross(closesM1, 6, 13, 5)
 					XUpMACDM1 := IsGolden(closesM1, 6, 13, 5)
 					var BuyMACD bool

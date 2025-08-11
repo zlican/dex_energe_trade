@@ -65,19 +65,21 @@ func Update5minEMA25ToDB(db *sql.DB, symbol string, data *types.TokenData, confi
 	_, kLine, _ := StochRSIFromClose(closes, 14, 14, 3, 3)
 	lastKLine := kLine[len(kLine)-1]
 	UpMACD := IsAboutToGoldenCross(closes, 6, 13, 5)
+	XUpMACD := IsGolden(closes, 6, 13, 5)
 
 	// 写入数据库（UPSERT）
 	_, err = model.DB.Exec(`
-		INSERT INTO symbol_ema_5min (symbol, timestamp, ema25, ema50, ema169, srsi, upmacd)
-		VALUES (?, ?, ?, ?, ?, ?, ?)
+		INSERT INTO symbol_ema_5min (symbol, timestamp, ema25, ema50, ema169, srsi, upmacd, xupmacd)
+		VALUES (?, ?, ?, ?, ?, ?, ?, ?)
 		ON DUPLICATE KEY UPDATE
 		timestamp = VALUES(timestamp),
 		ema25 = VALUES(ema25),
 		ema50 = VALUES(ema50),
 		ema169 = VALUES(ema169),
 		srsi = VALUES(srsi),
-		upmacd = VALUES(upmacd)
-	`, symbol, lastTime, lastEMA25, lastEMA50, lastEMA169, lastKLine, UpMACD)
+		upmacd = VALUES(upmacd),
+		xupmacd = VALUES(xupmacd)
+	`, symbol, lastTime, lastEMA25, lastEMA50, lastEMA169, lastKLine, UpMACD, XUpMACD)
 	if err != nil {
 		log.Printf("写入出错 %s: %v", symbol, err)
 	}
@@ -106,11 +108,11 @@ func Get5SRSIFromDB(db *sql.DB, symbol string) (srsi float64) {
 	return srsi
 }
 
-func GetUpMACDFromDB(db *sql.DB, symbol string) (upmacd bool) {
-	err := db.QueryRow("SELECT upmacd FROM symbol_ema_5min WHERE symbol = ?", symbol).Scan(&upmacd)
+func GetMACDFromDB(db *sql.DB, symbol string) (upmacd, xupmacd bool) {
+	err := db.QueryRow("SELECT upmacd, xupmacd FROM symbol_ema_5min WHERE symbol = ?", symbol).Scan(&upmacd, &xupmacd)
 	if err != nil {
-		log.Printf("查询 5MSRSIFromDB 失败 %s: %v", symbol, err)
-		return false
+		log.Printf("查询 5MMACD 失败 %s: %v", symbol, err)
+		return false, false
 	}
-	return upmacd
+	return upmacd, xupmacd
 }
