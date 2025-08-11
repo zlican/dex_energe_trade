@@ -44,7 +44,7 @@ func AnaylySymbol(data *types.TokenData, config *types.Config, resultsChan chan 
 	SRSIM5 := Get5SRSIFromDB(model.DB, tokenItem.Symbol)
 	UpMACDM5 := GetUpMACDFromDB(model.DB, tokenItem.Symbol)
 
-	up := price > EMA25M15 && EMA25M15 > EMA50M15 && EMA25M5 > EMA50M5
+	up := price > EMA25M15 && EMA25M15 > EMA50M15 && EMA25M5 > EMA50M5 && price > EMA25M5
 	buyCond := SRSIM5 < 35
 
 	//MACD模型
