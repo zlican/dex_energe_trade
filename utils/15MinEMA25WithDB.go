@@ -53,7 +53,7 @@ func Update15minEMA25ToDB(db *sql.DB, symbol string, data *types.TokenData, conf
 	for _, k := range ohlcvData {
 		closes = append(closes, k.Close)
 	}
-	price := closes[len(closes)]
+	price := closes[len(closes)-1]
 	ema25 := CalculateEMA(closes, 25)
 	ema50 := CalculateEMA(closes, 50)
 
