@@ -34,6 +34,7 @@ var (
 func main() {
 	mux := http.NewServeMux()
 	mux.HandleFunc("/api/latest-tg-messages", latestMessagesHandler)
+	mux.HandleFunc("/api/latest-tg-messages-waiting", latestMessagesWaitingHandler)
 
 	go func() {
 		if err := http.ListenAndServe(":8889", corsMiddleware(mux)); err != nil {
@@ -190,6 +191,19 @@ func latestMessagesHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	msgs := telegram.GetLatestMessages(limit)
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(msgs)
+}
+func latestMessagesWaitingHandler(w http.ResponseWriter, r *http.Request) {
+	// 参数limit，默认1
+	limit := 2
+	if l := r.URL.Query().Get("limit"); l != "" {
+		if v, err := strconv.Atoi(l); err == nil && v > 0 {
+			limit = v
+		}
+	}
+
+	msgs := telegram.GetLatestMessagesWaiting(limit)
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(msgs)
 }
