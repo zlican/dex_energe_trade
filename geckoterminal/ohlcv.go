@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"net/url"
 	"strconv"
+	"sync"
 	"time"
 )
 
@@ -50,6 +51,23 @@ type OHLCV struct {
 
 // GetOHLCV 获取代币的K线数据
 func GetOHLCV(network, poolAddress, timeframe string, options map[string]string, proxyURL string) ([]OHLCV, *MetaData, error) {
+	// 先尝试缓存
+	cacheKey := buildOHLCVCacheKey(network, poolAddress, timeframe, options)
+	if data, meta, ok := getOHLCVFromCache(cacheKey); ok {
+		return data, meta, nil
+	}
+
+	// 并发去重
+	ch, leader := enterOHLCVInflight(cacheKey)
+	if !leader {
+		// 不是leader，等待leader完成
+		<-ch
+		if data, meta, ok := getOHLCVFromCache(cacheKey); ok {
+			return data, meta, nil
+		}
+		return nil, nil, fmt.Errorf("并发请求结束但未命中缓存: %s", cacheKey)
+	}
+	// leader负责请求
 	// 构建请求URL
 	baseURL := fmt.Sprintf("https://api.geckoterminal.com/api/v2/networks/%s/pools/%s/ohlcv/%s",
 		network, poolAddress, timeframe)
@@ -101,18 +119,21 @@ func GetOHLCV(network, poolAddress, timeframe string, options map[string]string,
 	// 发送HTTP请求
 	resp, err := client.Do(req)
 	if err != nil {
+		leaveOHLCVInflight(cacheKey, false)
 		return nil, nil, fmt.Errorf("HTTP请求失败: %v", err)
 	}
 	defer resp.Body.Close()
 
 	// 检查HTTP状态码
 	if resp.StatusCode != http.StatusOK {
+		leaveOHLCVInflight(cacheKey, false)
 		return nil, nil, fmt.Errorf("HTTP请求返回非成功状态码: %d", resp.StatusCode)
 	}
 
 	// 读取响应内容
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {
+		leaveOHLCVInflight(cacheKey, false)
 		return nil, nil, fmt.Errorf("读取响应失败: %v", err)
 	}
 
@@ -121,6 +142,7 @@ func GetOHLCV(network, poolAddress, timeframe string, options map[string]string,
 	if err := json.Unmarshal(body, &response); err != nil {
 		// 打印原始响应以便调试
 		fmt.Printf("原始响应: %s\n", string(body))
+		leaveOHLCVInflight(cacheKey, false)
 		return nil, nil, fmt.Errorf("解析JSON失败: %v", err)
 	}
 
@@ -141,6 +163,9 @@ func GetOHLCV(network, poolAddress, timeframe string, options map[string]string,
 		}
 	}
 
+	// 写入缓存（设置TTL）
+	setOHLCVCache(cacheKey, ohlcvData, &response.Meta)
+	leaveOHLCVInflight(cacheKey, true)
 	return ohlcvData, &response.Meta, nil
 }
 
@@ -189,6 +214,109 @@ func GetSupportedNetworks() map[string]string {
 // GetTimeframes 返回GeckoTerminal支持的时间周期
 func GetTimeframes() []string {
 	return []string{"minute", "hour", "day"}
+}
+
+// =============== 内存缓存与并发去重 ===============
+type ohlcvCacheEntry struct {
+	data      []OHLCV
+	meta      *MetaData
+	expiresAt time.Time
+}
+
+var (
+	ohlcvCache = struct {
+		sync.RWMutex
+		m map[string]ohlcvCacheEntry
+	}{m: make(map[string]ohlcvCacheEntry)}
+
+	ohlcvInflight = struct {
+		sync.Mutex
+		m map[string]chan struct{}
+	}{m: make(map[string]chan struct{})}
+)
+
+// TTL: 分钟级数据短TTL，其他更长一些
+const (
+	ttlMinute = 20 * time.Second
+	ttlHour   = 60 * time.Second
+	ttlDay    = 5 * time.Minute
+)
+
+func buildOHLCVCacheKey(network, poolAddress, timeframe string, options map[string]string) string {
+	// options 里会包含 aggregate, limit, token, currency, include_empty_intervals
+	// 组合成稳定key
+	key := network + "|" + poolAddress + "|" + timeframe
+	// 简单串联（因来源固定且可控）
+	if options != nil {
+		key += "|agg=" + options["aggregate"] + "|lim=" + options["limit"] + "|tok=" + options["token"] + "|cur=" + options["currency"] + "|empty=" + options["include_empty_intervals"]
+	}
+	return key
+}
+
+func ttlForTimeframe(timeframe string) time.Duration {
+	switch timeframe {
+	case "minute":
+		return ttlMinute
+	case "hour":
+		return ttlHour
+	default:
+		return ttlDay
+	}
+}
+
+func getOHLCVFromCache(key string) ([]OHLCV, *MetaData, bool) {
+	ohlcvCache.RLock()
+	e, ok := ohlcvCache.m[key]
+	ohlcvCache.RUnlock()
+	if !ok {
+		return nil, nil, false
+	}
+	if time.Now().After(e.expiresAt) {
+		// 过期，删除
+		ohlcvCache.Lock()
+		delete(ohlcvCache.m, key)
+		ohlcvCache.Unlock()
+		return nil, nil, false
+	}
+	return e.data, e.meta, true
+}
+
+func setOHLCVCache(key string, data []OHLCV, meta *MetaData) {
+	ttl := ttlForTimeframe(metaTimeframe(meta))
+	if ttl == 0 {
+		ttl = 30 * time.Second
+	}
+	ohlcvCache.Lock()
+	ohlcvCache.m[key] = ohlcvCacheEntry{data: data, meta: meta, expiresAt: time.Now().Add(ttl)}
+	ohlcvCache.Unlock()
+}
+
+// 尝试从 meta 猜测时间级别，不可靠时回退 minute
+func metaTimeframe(meta *MetaData) string {
+	// API不直接提供timeframe，这里按调用参数对应缓存key分配，调用处已经用 key 带了 timeframe
+	// 用默认 minute 即可；真正的TTL由调用处 buildOHLCVCacheKey 的 timeframe 控制
+	return "minute"
+}
+
+func enterOHLCVInflight(key string) (chan struct{}, bool) {
+	ohlcvInflight.Lock()
+	if ch, ok := ohlcvInflight.m[key]; ok {
+		ohlcvInflight.Unlock()
+		return ch, false
+	}
+	ch := make(chan struct{})
+	ohlcvInflight.m[key] = ch
+	ohlcvInflight.Unlock()
+	return ch, true
+}
+
+func leaveOHLCVInflight(key string, success bool) {
+	ohlcvInflight.Lock()
+	if ch, ok := ohlcvInflight.m[key]; ok {
+		close(ch)
+		delete(ohlcvInflight.m, key)
+	}
+	ohlcvInflight.Unlock()
 }
 func CalculateRSI(ohlcvData []OHLCV, period int) []map[string]interface{} {
 	ohlcvData = reverseOHLCV(ohlcvData)

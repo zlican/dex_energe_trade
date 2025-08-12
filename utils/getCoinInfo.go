@@ -77,11 +77,17 @@ func FetchRankData(Fetchurl string, proxy string) ([]*types.TokenItem, error) {
 	}
 
 	var tokenList []*types.TokenItem
+	seen := make(map[string]struct{}) // 去重: 按链+地址
 	for _, item := range result.Data.Rank {
 		if item.SmartDegenCount < 3 && item.RenownedCount < 3 {
 			continue
 		}
 		item.Chain = "solana"
+		key := item.Chain + "|" + item.Address
+		if _, ok := seen[key]; ok {
+			continue
+		}
+		seen[key] = struct{}{}
 		tokenList = append(tokenList, &item)
 	}
 
@@ -94,15 +100,20 @@ func FetchRankData(Fetchurl string, proxy string) ([]*types.TokenItem, error) {
 
 func FetchPoolAddress(rankList []*types.TokenItem, proxy string, ch chan<- interface{}) []*types.TokenItem {
 	wg := sync.WaitGroup{}
+	sem := make(chan struct{}, 8) // 限制并发，避免瞬时打满API
 	for _, token := range rankList {
+		// 捕获循环变量
+		t := token
 		wg.Add(1)
-		go func() {
+		go func(tok *types.TokenItem) {
 			defer wg.Done()
+			sem <- struct{}{}
+			defer func() { <-sem }()
 			// 获取交易池地址
 			var poolAddress string
 			var err error
 			for retries := 0; retries < 3; retries++ {
-				poolAddress, err = GetPoolAddress(token.Chain, token.Address, proxy)
+				poolAddress, err = GetPoolAddress(tok.Chain, tok.Address, proxy)
 				if err == nil {
 					break
 				}
@@ -113,10 +124,10 @@ func FetchPoolAddress(rankList []*types.TokenItem, proxy string, ch chan<- inter
 				return
 			}
 
-			token.PoolAddress = poolAddress
+			tok.PoolAddress = poolAddress
 			/* fmt.Printf("添加代币: %s (%s) - 交易池: %s\n",
-			token.Symbol, token.Address, poolAddress) */
-		}()
+			   tok.Symbol, tok.Address, poolAddress) */
+		}(t)
 	}
 	wg.Wait()
 	close(ch)
