@@ -32,7 +32,7 @@ func AnaylySymbol(data *types.TokenData, config *types.Config, resultsChan chan 
 		EMA50M1 := CalculateEMA(closesM1, 50)
 		return closesM1, EMA25M1, EMA50M1, true
 	}
-	closesM1, EMA25M1, EMA50M1, ok := get1MData()
+	closesM1, EMA25M1, _, ok := get1MData()
 	if !ok {
 		return
 	}
@@ -42,19 +42,28 @@ func AnaylySymbol(data *types.TokenData, config *types.Config, resultsChan chan 
 	EMA25M5, EMA50M5, _ := Get5MEMAFromDB(model.DB, tokenItem.Symbol)
 	EMA25M15, EMA50M15 := Get15MEMAFromDB(model.DB, tokenItem.Symbol)
 	SRSIM5 := Get5SRSIFromDB(model.DB, tokenItem.Symbol)
-	UpMACDM5, _ := GetMACDFromDB(model.DB, tokenItem.Symbol)
 
-	up := price > EMA25M15 && EMA25M15 > EMA50M15 && EMA25M5 > EMA50M5 && price > EMA25M5
+	up := price > EMA25M15 && EMA25M15 > EMA50M15 && EMA25M5 > EMA50M5
 	buyCond := SRSIM5 < 35
 
 	//MACD模型
+	UpMACDM5, XUpMACDM5 := GetMACDFromDB(model.DB, tokenItem.Symbol)
 	UpMACDM1 := IsAboutToGoldenCross(closesM1, 6, 13, 5)
 	XUpMACDM1 := IsGolden(closesM1, 6, 13, 5)
-	var BuyMACD bool
+	var BuyMACDM1, BuyMACDM5 bool
 	if price > EMA25M1[len(EMA25M1)-1] && UpMACDM1 {
-		BuyMACD = true
+		BuyMACDM1 = true
 	} else if price < EMA25M1[len(EMA25M1)-1] && XUpMACDM1 {
-		BuyMACD = true
+		BuyMACDM1 = true
+	} else {
+		BuyMACDM1 = false
+	}
+	if price > EMA25M5 && UpMACDM5 {
+		BuyMACDM5 = true
+	} else if price < EMA25M15 && XUpMACDM5 {
+		BuyMACDM5 = true
+	} else {
+		BuyMACDM5 = false
 	}
 
 	/* 	Model3UP := price < EMA25M15 && EMA25M15 > EMA50M15 //15分钟随机漫步
@@ -62,7 +71,7 @@ func AnaylySymbol(data *types.TokenData, config *types.Config, resultsChan chan 
 
 	// ===== 模型1（优先级最高） =====
 	if up && buyCond {
-		if EMA25M1[len(EMA25M1)-1] > EMA50M1[len(EMA50M1)-1] && UpMACDM5 && BuyMACD {
+		if BuyMACDM5 && BuyMACDM1 {
 			// 完全满足，直接推送
 			msg := fmt.Sprintf("🟢%s\n📬 `%s`", data.Symbol, data.TokenItem.Address)
 			if err := telegram.SendMarkdownMessage(config.BotToken, config.ChatID, msg); err != nil {
@@ -77,11 +86,13 @@ func AnaylySymbol(data *types.TokenData, config *types.Config, resultsChan chan 
 
 	// ===== 模型2（仅模型1未触发时执行） =====
 
-	if price > EMA25M15 && EMA25M5 > EMA50M5 && EMA25M1[len(EMA25M1)-1] > EMA50M1[len(EMA50M1)-1] && UpMACDM5 && BuyMACD {
+	if price > EMA25M15 && EMA25M5 > EMA50M5 && BuyMACDM5 && BuyMACDM1 {
 		msg := fmt.Sprintf("🟣%s\n📬 `%s`", data.Symbol, data.TokenItem.Address)
 		if err := telegram.SendMarkdownMessage(config.BotToken, config.ChatID, msg); err != nil {
 			log.Println("发送失败:", err)
 		}
+	} else {
+		resultsChan <- tokenItem
 	}
 
 	/* 	// ===== 模型3 反转模型 =====
