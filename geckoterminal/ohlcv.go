@@ -237,9 +237,9 @@ var (
 
 // TTL: 分钟级数据短TTL，其他更长一些
 const (
-	ttlMinute = 20 * time.Second
-	ttlHour   = 60 * time.Second
-	ttlDay    = 5 * time.Minute
+	ttlMinute = 7 * time.Second
+	ttlHour   = 7 * time.Second
+	ttlDay    = 7 * time.Second
 )
 
 func buildOHLCVCacheKey(network, poolAddress, timeframe string, options map[string]string) string {
