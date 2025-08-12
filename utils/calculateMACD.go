@@ -34,7 +34,7 @@ func IsAboutToGoldenCross(closePrices []float64, fastPeriod, slowPeriod, signalP
 	UPHist := histNow > histPrev
 
 	// 2. 柱子为正
-	histogramUpZero := histNow >= 0
+	histogramUpZero := histNow > 0
 
 	return UPHist || histogramUpZero
 }
@@ -52,7 +52,7 @@ func IsGolden(closePrices []float64, fastPeriod, slowPeriod, signalPeriod int) b
 
 	histogramNow := histogram[len(histogram)-2]
 
-	histogramUpZero := histogramNow >= 0
+	histogramUpZero := histogramNow > 0
 
 	return histogramUpZero
 }
