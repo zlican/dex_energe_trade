@@ -71,6 +71,7 @@ func AnaylySymbol(data *types.TokenData, config *types.Config, resultsChan chan 
 
 	// ===== 模型1（优先级最高） =====
 	if up && buyCond {
+		tokenItem.Emoje = "🟢"
 		if BuyMACDM5 && BuyMACDM1 {
 			// 完全满足，直接推送
 			msg := fmt.Sprintf("🟢%s\n📬 `%s`", data.Symbol, data.TokenItem.Address)
@@ -85,7 +86,7 @@ func AnaylySymbol(data *types.TokenData, config *types.Config, resultsChan chan 
 	}
 
 	// ===== 模型2（仅模型1未触发时执行） =====
-
+	tokenItem.Emoje = "🟣"
 	if price > EMA25M15 && EMA25M5 > EMA50M5 && BuyMACDM5 && BuyMACDM1 {
 		msg := fmt.Sprintf("🟣%s\n📬 `%s`", data.Symbol, data.TokenItem.Address)
 		if err := telegram.SendMarkdownMessage(config.BotToken, config.ChatID, msg); err != nil {

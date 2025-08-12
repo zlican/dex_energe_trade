@@ -20,4 +20,5 @@ type TokenItem struct {
 	SmartDegenCount    int     `json:"smart_degen_count"`
 	RenownedCount      int     `json:"renowned_count"`
 	PoolAddress        string  // 将在初始化时填充
+	Emoje              string
 }

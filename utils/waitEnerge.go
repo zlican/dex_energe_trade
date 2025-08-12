@@ -36,7 +36,7 @@ func sendWaitListBroadcast(now time.Time, waiting_token, chatID string) {
 	var emoje string
 
 	for _, token := range waitList {
-		emoje = "🟢"
+		emoje = token.TokenItem.Emoje
 		msgBuilder.WriteString(fmt.Sprintf("%s %-12s\n📬 `%s`\n", emoje, token.Symbol, token.TokenItem.Address))
 	}
 	msg := msgBuilder.String()
