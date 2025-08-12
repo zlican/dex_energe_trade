@@ -85,10 +85,10 @@ func WaitEnerge(resultsChan chan types.TokenItem, db *sql.DB, wait_sucess_token,
 					EMA25M5, EMA50M5, _ := Get5MEMAFromDB(model.DB, token.Symbol)
 					EMA25M15, EMA50M15 := Get15MEMAFromDB(model.DB, token.Symbol)
 					//MACD模型
-					UpMACDM5, XUpMACDM5 := GetMACDFromDB(model.DB, token.Symbol)
+					_, XUpMACDM5 := GetMACDFromDB(model.DB, token.Symbol)
 					UpMACDM1 := IsAboutToGoldenCross(closesM1, 6, 13, 5)
 					XUpMACDM1 := IsGolden(closesM1, 6, 13, 5)
-					var BuyMACDM1, BuyMACDM5 bool
+					var BuyMACDM1 bool
 					if price > EMA25M1[len(EMA25M1)-1] && UpMACDM1 {
 						BuyMACDM1 = true
 					} else if price < EMA25M1[len(EMA25M1)-1] && XUpMACDM1 {
@@ -96,16 +96,9 @@ func WaitEnerge(resultsChan chan types.TokenItem, db *sql.DB, wait_sucess_token,
 					} else {
 						BuyMACDM1 = false
 					}
-					if price > EMA25M5 && UpMACDM5 {
-						BuyMACDM5 = true
-					} else if price < EMA25M15 && XUpMACDM5 {
-						BuyMACDM5 = true
-					} else {
-						BuyMACDM5 = false
-					}
 
-					if price > EMA25M15 && EMA25M15 > EMA50M15 && EMA25M5 > EMA50M5 && BuyMACDM5 && BuyMACDM1 {
-						msg := fmt.Sprintf("监控回响：🟢%s\n📬 `%s`", sym, token.TokenItem.Address)
+					if price > EMA25M15 && EMA25M15 > EMA50M15 && EMA25M5 > EMA50M5 && XUpMACDM5 && BuyMACDM1 {
+						msg := fmt.Sprintf("监控回响：%s%s\n📬 `%s`", token.TokenItem.Emoje, sym, token.TokenItem.Address)
 						telegram.SendMarkdownMessage(wait_sucess_token, chatID, msg)
 						log.Printf("🟢 等待成功 Buy : %s", sym)
 						waitMu.Lock()
