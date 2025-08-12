@@ -41,6 +41,31 @@ func IsAboutToGoldenCross(closePrices []float64, fastPeriod, slowPeriod, signalP
 	return false
 }
 
+// 判断是否做多（一分钟防插针版）
+func IsAboutToGoldenCrossM1(closePrices []float64, fastPeriod, slowPeriod, signalPeriod int) bool {
+	if len(closePrices) < slowPeriod+signalPeriod+1 {
+		return false
+	}
+	_, _, histogram := CalculateMACD(closePrices, fastPeriod, slowPeriod, signalPeriod)
+	if len(histogram) < 3 {
+		return false
+	}
+
+	A := histogram[len(histogram)-3] // 更早
+	B := histogram[len(histogram)-2]
+	C := histogram[len(histogram)-1] // 最新
+
+	// 条件一：最新柱为正（直接看多）+ B （C会有插针）
+	if C > 0 && B > 0 {
+		return true
+	}
+	// 条件二：三根都为负且逐步抬高（从更负到接近 0）：A < B < C
+	if A < 0 && B < 0 && C < 0 && A < B && B < C {
+		return true
+	}
+	return false
+}
+
 // 判断是否为正
 func IsGolden(closePrices []float64, fastPeriod, slowPeriod, signalPeriod int) bool {
 	if len(closePrices) < slowPeriod+signalPeriod+1 {
@@ -54,8 +79,29 @@ func IsGolden(closePrices []float64, fastPeriod, slowPeriod, signalPeriod int) b
 
 	C := histogram[len(histogram)-1] // 最新
 
-	// 条件一：最新柱为正（直接看多）
+	// 条件一：最新柱为正（直接看多
 	if C > 0 {
+		return true
+	}
+	return false
+}
+
+// 判断是否为正（1分钟防插针版）
+func IsGoldenM1(closePrices []float64, fastPeriod, slowPeriod, signalPeriod int) bool {
+	if len(closePrices) < slowPeriod+signalPeriod+1 {
+		return false
+	}
+
+	_, _, histogram := CalculateMACD(closePrices, fastPeriod, slowPeriod, signalPeriod)
+	if len(histogram) < 3 {
+		return false
+	}
+
+	B := histogram[len(histogram)-2]
+	C := histogram[len(histogram)-1] // 最新
+
+	// 条件一：最新柱为正（直接看多）+ B （C会有插针）
+	if C > 0 && B > 0 {
 		return true
 	}
 	return false
@@ -76,7 +122,7 @@ func IsAboutToDeadCross(closePrices []float64, fastPeriod, slowPeriod, signalPer
 	C := histogram[len(histogram)-1]
 
 	// 条件一：最新柱为负（直接看空）
-	if C < 0 {
+	if C < 0 && B < 0 {
 		return true
 	}
 	// 条件二：三根都为正且逐步走低（从高到低）：A > B > C
@@ -96,10 +142,11 @@ func IsDead(closePrices []float64, fastPeriod, slowPeriod, signalPeriod int) boo
 	if len(histogram) < 3 {
 		return false
 	}
+	B := histogram[len(histogram)-2]
 	C := histogram[len(histogram)-1]
 
 	// 条件一：最新柱为负（直接看空）
-	if C < 0 {
+	if C < 0 && B < 0 {
 		return true
 	}
 	return false

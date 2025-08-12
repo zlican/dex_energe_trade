@@ -48,8 +48,8 @@ func AnaylySymbol(data *types.TokenData, config *types.Config, resultsChan chan 
 
 	//MACD模型
 	_, XUpMACDM5 := GetMACDFromDB(model.DB, tokenItem.Symbol)
-	UpMACDM1 := IsAboutToGoldenCross(closesM1, 6, 13, 5)
-	XUpMACDM1 := IsGolden(closesM1, 6, 13, 5)
+	UpMACDM1 := IsAboutToGoldenCrossM1(closesM1, 6, 13, 5) //防插针版
+	XUpMACDM1 := IsGoldenM1(closesM1, 6, 13, 5)
 	var BuyMACDM1 bool
 	if price > EMA25M1[len(EMA25M1)-1] && UpMACDM1 {
 		BuyMACDM1 = true
