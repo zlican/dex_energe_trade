@@ -122,22 +122,32 @@ func SendMarkdownMessage(botToken, chatID, text string) error {
 		return fmt.Errorf("failed to marshal markdown message: %w", err)
 	}
 
-	resp, err := client.Post(url, "application/json", bytes.NewBuffer(jsonMessage))
-	if err != nil {
-		return fmt.Errorf("failed to send markdown message: %w", err)
-	}
-	defer resp.Body.Close()
+	var lastErr error
+	for attempt := 1; attempt <= 3; attempt++ {
+		resp, err := client.Post(url, "application/json", bytes.NewBuffer(jsonMessage))
+		if err != nil {
+			lastErr = fmt.Errorf("failed to send markdown message (attempt %d): %w", attempt, err)
+		} else {
+			// 成功建立连接
+			if resp.StatusCode != http.StatusOK {
+				lastErr = fmt.Errorf("received non-200 response (attempt %d): %s", attempt, resp.Status)
+			} else {
+				// 成功
+				AddMessage(SavedMessage{
+					Text:      text,
+					Timestamp: time.Now(),
+				})
+				resp.Body.Close()
+				return nil
+			}
+			resp.Body.Close()
+		}
 
-	if resp.StatusCode != http.StatusOK {
-		return fmt.Errorf("received non-200 response: %s", resp.Status)
+		// 等待 500ms 再重试
+		time.Sleep(500 * time.Millisecond)
 	}
-	// 发送成功后保存消息，调用统一的 AddMessage
-	AddMessage(SavedMessage{
-		Text:      text,
-		Timestamp: time.Now(),
-	})
 
-	return nil
+	return fmt.Errorf("多次发送失败: %w", lastErr)
 }
 
 // AddMessage 添加一条消息，超出maxSize自动删除最早的
@@ -201,21 +211,32 @@ func SendMarkdownMessageWaiting(botToken, chatID, text string) error {
 		return fmt.Errorf("failed to marshal markdown message: %w", err)
 	}
 
-	resp, err := client.Post(url, "application/json", bytes.NewBuffer(jsonMessage))
-	if err != nil {
-		return fmt.Errorf("failed to send markdown message: %w", err)
-	}
-	defer resp.Body.Close()
+	var lastErr error
+	for attempt := 1; attempt <= 3; attempt++ {
+		resp, err := client.Post(url, "application/json", bytes.NewBuffer(jsonMessage))
+		if err != nil {
+			lastErr = fmt.Errorf("failed to send markdown message (attempt %d): %w", attempt, err)
+		} else {
+			// 成功建立连接
+			if resp.StatusCode != http.StatusOK {
+				lastErr = fmt.Errorf("received non-200 response (attempt %d): %s", attempt, resp.Status)
+			} else {
+				// 成功
+				AddMessageWaiting(SavedMessage{
+					Text:      text,
+					Timestamp: time.Now(),
+				})
+				resp.Body.Close()
+				return nil
+			}
+			resp.Body.Close()
+		}
 
-	if resp.StatusCode != http.StatusOK {
-		return fmt.Errorf("received non-200 response: %s", resp.Status)
+		// 等待 500ms 再重试
+		time.Sleep(500 * time.Millisecond)
 	}
 
-	AddMessageWaiting(SavedMessage{
-		Text:      text,
-		Timestamp: time.Now(),
-	})
-	return nil
+	return fmt.Errorf("多次发送失败: %w", lastErr)
 }
 
 // AddMessage 添加一条消息，超出maxSize自动删除最早的
