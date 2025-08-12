@@ -42,7 +42,7 @@ func AnaylySymbol(data *types.TokenData, config *types.Config, resultsChan chan 
 	EMA25M5, EMA50M5, _ := Get5MEMAFromDB(model.DB, tokenItem.Symbol)
 	EMA25M15, EMA50M15 := Get15MEMAFromDB(model.DB, tokenItem.Symbol)
 	SRSIM5 := Get5SRSIFromDB(model.DB, tokenItem.Symbol)
-	UpMACDM5, XUpMACDM5 := GetMACDFromDB(model.DB, tokenItem.Symbol)
+	UpMACDM5, _ := GetMACDFromDB(model.DB, tokenItem.Symbol)
 
 	up := price > EMA25M15 && EMA25M15 > EMA50M15 && EMA25M5 > EMA50M5 && price > EMA25M5
 	buyCond := SRSIM5 < 35
@@ -57,8 +57,8 @@ func AnaylySymbol(data *types.TokenData, config *types.Config, resultsChan chan 
 		BuyMACD = true
 	}
 
-	Model3UP := price < EMA25M15 && EMA25M15 > EMA50M15 //15分钟随机漫步
-	Model3BuyMACD := XUpMACDM1 && XUpMACDM5             //双重MACD看多
+	/* 	Model3UP := price < EMA25M15 && EMA25M15 > EMA50M15 //15分钟随机漫步
+	   	Model3BuyMACD := XUpMACDM1 && XUpMACDM5             //双重MACD看多 */
 
 	// ===== 模型1（优先级最高） =====
 	if up && buyCond {
@@ -84,11 +84,11 @@ func AnaylySymbol(data *types.TokenData, config *types.Config, resultsChan chan 
 		}
 	}
 
-	// ===== 模型3 反转模型 =====
-	if Model3UP && Model3BuyMACD {
-		msg := fmt.Sprintf("🟡%s\n📬 `%s`", data.Symbol, data.TokenItem.Address)
-		if err := telegram.SendMarkdownMessage(config.BotToken, config.ChatID, msg); err != nil {
-			log.Println("发送失败:", err)
-		}
-	}
+	/* 	// ===== 模型3 反转模型 =====
+	   	if Model3UP && Model3BuyMACD {
+	   		msg := fmt.Sprintf("🟡%s\n📬 `%s`", data.Symbol, data.TokenItem.Address)
+	   		if err := telegram.SendMarkdownMessage(config.BotToken, config.ChatID, msg); err != nil {
+	   			log.Println("发送失败:", err)
+	   		}
+	   	} */
 }
