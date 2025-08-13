@@ -82,6 +82,7 @@ func WaitEnerge(resultsChan chan types.TokenItem, db *sql.DB, wait_sucess_token,
 					}
 					price := closesM1[len(closesM1)-1]
 					EMA25M1 := CalculateEMA(closesM1, 25)
+					EMA50M1 := CalculateEMA(closesM1, 50)
 					EMA25M5, EMA50M5, _ := Get5MEMAFromDB(model.DB, token.Symbol)
 					EMA25M15, EMA50M15 := Get15MEMAFromDB(model.DB, token.Symbol)
 					//MACD模型
@@ -89,9 +90,13 @@ func WaitEnerge(resultsChan chan types.TokenItem, db *sql.DB, wait_sucess_token,
 					UpMACDM1 := IsAboutToGoldenCrossM1(closesM1, 6, 13, 5)
 					XUpMACDM1 := IsGoldenM1(closesM1, 6, 13, 5)
 					var BuyMACDM1 bool
-					if price > EMA25M1[len(EMA25M1)-1] && UpMACDM1 {
+					M1UPEMA := EMA25M1[len(EMA25M1)-1] > EMA50M1[len(EMA50M1)-1]
+					M1DOWNEMA := EMA25M1[len(EMA25M1)-1] < EMA50M1[len(EMA50M1)-1]
+					if M1UPEMA && price > EMA25M1[len(EMA25M1)-1] && UpMACDM1 { //金叉浅回调
 						BuyMACDM1 = true
-					} else if price < EMA25M1[len(EMA25M1)-1] && XUpMACDM1 {
+					} else if M1UPEMA && price < EMA25M1[len(EMA25M1)-1] && XUpMACDM1 { //金叉深回调
+						BuyMACDM1 = true
+					} else if M1DOWNEMA && price > EMA25M1[len(EMA25M1)-1] && XUpMACDM1 { //死叉反转
 						BuyMACDM1 = true
 					} else {
 						BuyMACDM1 = false

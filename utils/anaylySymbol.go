@@ -32,7 +32,7 @@ func AnaylySymbol(data *types.TokenData, config *types.Config, resultsChan chan 
 		EMA50M1 := CalculateEMA(closesM1, 50)
 		return closesM1, EMA25M1, EMA50M1, true
 	}
-	closesM1, EMA25M1, _, ok := get1MData()
+	closesM1, EMA25M1, EMA50M1, ok := get1MData()
 	if !ok {
 		return
 	}
@@ -51,9 +51,13 @@ func AnaylySymbol(data *types.TokenData, config *types.Config, resultsChan chan 
 	UpMACDM1 := IsAboutToGoldenCrossM1(closesM1, 6, 13, 5) //防插针版
 	XUpMACDM1 := IsGoldenM1(closesM1, 6, 13, 5)
 	var BuyMACDM1 bool
-	if price > EMA25M1[len(EMA25M1)-1] && UpMACDM1 {
+	M1UPEMA := EMA25M1[len(EMA25M1)-1] > EMA50M1[len(EMA50M1)-1]
+	M1DOWNEMA := EMA25M1[len(EMA25M1)-1] < EMA50M1[len(EMA50M1)-1]
+	if M1UPEMA && price > EMA25M1[len(EMA25M1)-1] && UpMACDM1 { //金叉浅回调
 		BuyMACDM1 = true
-	} else if price < EMA25M1[len(EMA25M1)-1] && XUpMACDM1 {
+	} else if M1UPEMA && price < EMA25M1[len(EMA25M1)-1] && XUpMACDM1 { //金叉深回调
+		BuyMACDM1 = true
+	} else if M1DOWNEMA && price > EMA25M1[len(EMA25M1)-1] && XUpMACDM1 { //死叉反转
 		BuyMACDM1 = true
 	} else {
 		BuyMACDM1 = false
