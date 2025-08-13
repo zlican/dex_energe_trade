@@ -38,16 +38,12 @@ func AnaylySymbol(data *types.TokenData, config *types.Config, resultsChan chan 
 	}
 
 	price := closesM1[len(closesM1)-1]
-
 	EMA25M5, EMA50M5, _ := Get5MEMAFromDB(model.DB, tokenItem.Symbol)
 	EMA25M15, EMA50M15 := Get15MEMAFromDB(model.DB, tokenItem.Symbol)
-	SRSIM5 := Get5SRSIFromDB(model.DB, tokenItem.Symbol)
 
-	up := price > EMA25M15 && EMA25M15 > EMA50M15 && EMA25M5 > EMA50M5
-	buyCond := SRSIM5 < 35
+	TrendUp := price > EMA25M15 && EMA25M15 > EMA50M15 && price > EMA25M5 && EMA25M5 > EMA50M5
 
 	//MACD模型
-	_, XUpMACDM5 := GetMACDFromDB(model.DB, tokenItem.Symbol)
 	UpMACDM1 := IsAboutToGoldenCrossM1(closesM1, 6, 13, 5) //防插针版
 	XUpMACDM1 := IsGoldenM1(closesM1, 6, 13, 5)
 	var BuyMACDM1 bool
@@ -63,13 +59,10 @@ func AnaylySymbol(data *types.TokenData, config *types.Config, resultsChan chan 
 		BuyMACDM1 = false
 	}
 
-	/* 	Model3UP := price < EMA25M15 && EMA25M15 > EMA50M15 //15分钟随机漫步
-	   	Model3BuyMACD := XUpMACDM1 && XUpMACDM5             //双重MACD看多 */
-
 	// ===== 模型1（优先级最高） =====
-	if up && buyCond {
+	if TrendUp {
 		tokenItem.Emoje = "🟢"
-		if XUpMACDM5 && BuyMACDM1 {
+		if BuyMACDM1 {
 			// 完全满足，直接推送
 			msg := fmt.Sprintf("🟢%s\n📬 `%s`", data.Symbol, data.TokenItem.Address)
 			if err := telegram.SendMarkdownMessage(config.BotToken, config.ChatID, msg); err != nil {
@@ -81,23 +74,4 @@ func AnaylySymbol(data *types.TokenData, config *types.Config, resultsChan chan 
 		}
 		return // 模型1触发后直接返回，不执行模型2
 	}
-
-	// ===== 模型2（仅模型1未触发时执行） =====
-	tokenItem.Emoje = "🟣"
-	if price > EMA25M15 && EMA25M5 > EMA50M5 && XUpMACDM5 && BuyMACDM1 {
-		msg := fmt.Sprintf("🟣%s\n📬 `%s`", data.Symbol, data.TokenItem.Address)
-		if err := telegram.SendMarkdownMessage(config.BotToken, config.ChatID, msg); err != nil {
-			log.Println("发送失败:", err)
-		}
-	} else {
-		resultsChan <- tokenItem
-	}
-
-	/* 	// ===== 模型3 反转模型 =====
-	   	if Model3UP && Model3BuyMACD {
-	   		msg := fmt.Sprintf("🟡%s\n📬 `%s`", data.Symbol, data.TokenItem.Address)
-	   		if err := telegram.SendMarkdownMessage(config.BotToken, config.ChatID, msg); err != nil {
-	   			log.Println("发送失败:", err)
-	   		}
-	   	} */
 }
