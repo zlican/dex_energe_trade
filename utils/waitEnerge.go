@@ -80,7 +80,7 @@ func WaitEnerge(resultsChan chan types.TokenItem, db *sql.DB, wait_sucess_token,
 					if err != nil {
 						return
 					}
-					price := closesM1[len(closesM1)-1]
+					price := closesM1[len(closesM1)-2]
 					EMA25M1 := CalculateEMA(closesM1, 25)
 					EMA50M1 := CalculateEMA(closesM1, 50)
 					EMA25M5, EMA50M5, _ := Get5MEMAFromDB(model.DB, token.Symbol)

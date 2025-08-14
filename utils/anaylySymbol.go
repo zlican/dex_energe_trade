@@ -37,7 +37,7 @@ func AnaylySymbol(data *types.TokenData, config *types.Config, resultsChan chan 
 		return
 	}
 
-	price := closesM1[len(closesM1)-1]
+	price := closesM1[len(closesM1)-2]
 	EMA25M5, EMA50M5, _ := Get5MEMAFromDB(model.DB, tokenItem.Symbol)
 	EMA25M15, EMA50M15 := Get15MEMAFromDB(model.DB, tokenItem.Symbol)
 
