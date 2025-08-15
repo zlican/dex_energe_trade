@@ -16,7 +16,7 @@ func AnaylySymbol(data *types.TokenData, config *types.Config, resultsChan chan 
 	tokenItem := data.TokenItem
 
 	// ===== 获取1分钟EMA（仅当需要时调用，减少API消耗） =====
-	get1MData := func() ([]float64, []float64, []float64, bool) {
+	get1MData := func() ([]float64, []float64, []float64, float64, bool) {
 		optionsM1 := map[string]string{
 			"aggregate":               config.OneAggregate,
 			"limit":                   "200",
@@ -26,13 +26,14 @@ func AnaylySymbol(data *types.TokenData, config *types.Config, resultsChan chan 
 		}
 		closesM1, err := GetClosesByAPI(tokenItem, config, optionsM1)
 		if err != nil || len(closesM1) < 2 {
-			return nil, nil, nil, false
+			return nil, nil, nil, 0, false
 		}
 		EMA25M1 := CalculateEMA(closesM1, 25)
 		EMA50M1 := CalculateEMA(closesM1, 50)
-		return closesM1, EMA25M1, EMA50M1, true
+		MA60 := CalculateMA(closesM1, 60)
+		return closesM1, EMA25M1, EMA50M1, MA60, true
 	}
-	closesM1, EMA25M1, EMA50M1, ok := get1MData()
+	closesM1, EMA25M1, EMA50M1, MA60M1, ok := get1MData()
 	if !ok {
 		return
 	}
@@ -49,11 +50,9 @@ func AnaylySymbol(data *types.TokenData, config *types.Config, resultsChan chan 
 	var BuyMACDM1 bool
 	M1UPEMA := EMA25M1[len(EMA25M1)-1] > EMA50M1[len(EMA50M1)-1]
 	M1DOWNEMA := EMA25M1[len(EMA25M1)-1] < EMA50M1[len(EMA50M1)-1]
-	if M1UPEMA && price > EMA25M1[len(EMA25M1)-1] && UpMACDM1 { //金叉浅回调
+	if M1UPEMA && UpMACDM1 { //金叉回调
 		BuyMACDM1 = true
-	} else if M1UPEMA && price < EMA25M1[len(EMA25M1)-1] && XUpMACDM1 { //金叉深回调
-		BuyMACDM1 = true
-	} else if M1DOWNEMA && price > EMA25M1[len(EMA25M1)-1] && XUpMACDM1 { //死叉反转
+	} else if M1DOWNEMA && price > MA60M1 && XUpMACDM1 { //死叉反转
 		BuyMACDM1 = true
 	} else {
 		BuyMACDM1 = false

@@ -83,6 +83,7 @@ func WaitEnerge(resultsChan chan types.TokenItem, db *sql.DB, wait_sucess_token,
 					price := closesM1[len(closesM1)-2]
 					EMA25M1 := CalculateEMA(closesM1, 25)
 					EMA50M1 := CalculateEMA(closesM1, 50)
+					MA60M1 := CalculateMA(closesM1, 60)
 					EMA25M5, EMA50M5, _ := Get5MEMAFromDB(model.DB, token.Symbol)
 					EMA25M15, EMA50M15 := Get15MEMAFromDB(model.DB, token.Symbol)
 
@@ -93,11 +94,9 @@ func WaitEnerge(resultsChan chan types.TokenItem, db *sql.DB, wait_sucess_token,
 					var BuyMACDM1 bool
 					M1UPEMA := EMA25M1[len(EMA25M1)-1] > EMA50M1[len(EMA50M1)-1]
 					M1DOWNEMA := EMA25M1[len(EMA25M1)-1] < EMA50M1[len(EMA50M1)-1]
-					if M1UPEMA && price > EMA25M1[len(EMA25M1)-1] && UpMACDM1 { //金叉浅回调
+					if M1UPEMA && UpMACDM1 { //金叉回调
 						BuyMACDM1 = true
-					} else if M1UPEMA && price < EMA25M1[len(EMA25M1)-1] && XUpMACDM1 { //金叉深回调
-						BuyMACDM1 = true
-					} else if M1DOWNEMA && price > EMA25M1[len(EMA25M1)-1] && XUpMACDM1 { //死叉反转
+					} else if M1DOWNEMA && price > MA60M1 && XUpMACDM1 { //死叉反转
 						BuyMACDM1 = true
 					} else {
 						BuyMACDM1 = false
