@@ -42,7 +42,9 @@ func AnaylySymbol(data *types.TokenData, config *types.Config, resultsChan chan 
 	EMA25M5, EMA50M5, _ := Get5MEMAFromDB(model.DB, tokenItem.Symbol)
 	EMA25M15, EMA50M15 := Get15MEMAFromDB(model.DB, tokenItem.Symbol)
 
-	TrendUp := price > EMA25M15 && EMA25M15 > EMA50M15 && price > EMA25M5 && EMA25M5 > EMA50M5
+	//TrendUp := price > EMA25M15 && EMA25M15 > EMA50M15 && price > EMA25M5 && EMA25M5 > EMA50M5
+	TrendDownM15 := price < EMA25M15 && EMA25M15 < EMA50M15
+	TrendDownM5 := price < EMA25M5 && EMA25M5 < EMA50M5
 
 	//MACD模型
 	UpMACDM1 := IsAboutToGoldenCrossM1(closesM1, 6, 13, 5) //防插针版
@@ -59,7 +61,7 @@ func AnaylySymbol(data *types.TokenData, config *types.Config, resultsChan chan 
 	}
 
 	// ===== 模型1（优先级最高） =====
-	if TrendUp {
+	if !TrendDownM15 && !TrendDownM5 {
 		tokenItem.Emoje = "🟢"
 		if BuyMACDM1 {
 			// 完全满足，直接推送
