@@ -109,7 +109,6 @@ func WaitEnerge(resultsChan chan types.TokenItem, db *sql.DB, wait_sucess_token,
 						msg := fmt.Sprintf("监控回响：%s%s\n📬 `%s`", token.TokenItem.Emoje, sym, token.TokenItem.Address)
 						telegram.SendMarkdownMessage(wait_sucess_token, chatID, msg)
 						log.Printf("🟢 等待成功 Buy : %s", sym)
-						changed = true
 					} else if EMA25M5 < EMA50M5 {
 						log.Printf("❌ Wait失败 Buy : %s", sym)
 						waitMu.Lock()
@@ -118,7 +117,7 @@ func WaitEnerge(resultsChan chan types.TokenItem, db *sql.DB, wait_sucess_token,
 						changed = true
 					}
 
-					if now.Sub(token.AddedAt) > 2*time.Hour {
+					if now.Sub(token.AddedAt) > 3*time.Hour {
 						log.Printf("⏰ Wait超时清理 : %s", sym)
 						waitMu.Lock()
 						delete(waitList, sym)
