@@ -52,9 +52,9 @@ func AnaylySymbol(data *types.TokenData, config *types.Config, resultsChan chan 
 	var BuyMACDM1 bool
 	M1UPEMA := EMA25M1[len(EMA25M1)-1] > EMA50M1[len(EMA50M1)-1]
 	M1DOWNEMA := EMA25M1[len(EMA25M1)-1] < EMA50M1[len(EMA50M1)-1]
-	if M1UPEMA && UpMACDM1 { //金叉回调
+	if M1UPEMA && UpMACDM1 && MA60M1 < EMA25M1[len(EMA25M1)-1] { //金叉回调
 		BuyMACDM1 = true
-	} else if M1DOWNEMA && price > MA60M1 && XUpMACDM1 { //死叉反转
+	} else if M1DOWNEMA && price > MA60M1 && XUpMACDM1 && MA60M1 < EMA25M1[len(EMA25M1)-1] { //死叉反转
 		BuyMACDM1 = true
 	} else {
 		BuyMACDM1 = false
