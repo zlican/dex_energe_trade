@@ -56,31 +56,44 @@ func Update15minEMA25ToDB(db *sql.DB, symbol string, data *types.TokenData, conf
 	price := closes[len(closes)-2]
 	ema25 := CalculateEMA(closes, 25)
 	ema50 := CalculateEMA(closes, 50)
+	ma60 := CalculateMA(closes, 60)
+	UpMACD := IsAboutToGoldenCross(closes, 6, 13, 5)
+	XUpMACD := IsGolden(closes, 6, 13, 5)
 
-	currentPrice := closes[len(closes)-1]
+	currentPrice := closes[len(closes)-2]
 	lastEMA25 := ema25[len(ema25)-1]
 	lastEMA50 := ema50[len(ema50)-1]
 	lastTime := ohlcvData[len(ohlcvData)-1].Timestamp
 	_, kLine, _ := StochRSIFromClose(closes, 14, 14, 3, 3)
 	lastKLine := kLine[len(kLine)-1]
 
+	var status string
+	if lastEMA25 > ma60 && UpMACD && price > ma60 {
+		status = "BUYMACD"
+	} else if lastEMA25 < ma60 && XUpMACD && price > lastEMA25 && price > ma60 {
+		status = "BUYMACD"
+	} else {
+		status = "RANGE"
+	}
+
 	// 写入数据库（UPSERT）
 	_, err = model.DB.Exec(`
-		INSERT INTO symbol_ema_15min (symbol, timestamp, ema25, ema50, srsi, price_gt_ema25)
-		VALUES (?, ?, ?, ?, ?, ?)
+		INSERT INTO symbol_ema_15min (symbol, timestamp, ema25, ema50, srsi, status, price_gt_ema25)
+		VALUES (?, ?, ?, ?, ?, ?, ?)
 		ON DUPLICATE KEY UPDATE
 		timestamp = VALUES(timestamp),
 		ema25 = VALUES(ema25),
 		ema50 = VALUES(ema50),
 		srsi = VALUES(srsi),
+		status = VALUES(status),
 		price_gt_ema25 = VALUES(price_gt_ema25)
-	`, symbol, lastTime, lastEMA25, lastEMA50, lastKLine, currentPrice > lastEMA25)
+	`, symbol, lastTime, lastEMA25, lastEMA50, lastKLine, status, currentPrice > lastEMA25)
 	if err != nil {
 		log.Printf("写入出错 %s: %v", symbol, err)
 	}
 
 	UPEMA = lastEMA25 > lastEMA50
-	GT = price > lastEMA25
+	GT = price > ma60
 
 	return UPEMA, GT
 
@@ -112,4 +125,13 @@ func Get15MSRSIFromDB(db *sql.DB, symbol string) (srsi float64) {
 		return 0
 	}
 	return srsi
+}
+
+func Get15MStatusFromDB(db *sql.DB, symbol string) (status string) {
+	err := db.QueryRow("SELECT status FROM symbol_ema_15min WHERE symbol = ?", symbol).Scan(&status)
+	if err != nil {
+		log.Printf("查询 15MStatusFromDB 失败 %s: %v", symbol, err)
+		return ""
+	}
+	return status
 }

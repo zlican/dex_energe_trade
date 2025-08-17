@@ -53,10 +53,13 @@ func Update5minEMA25ToDB(db *sql.DB, symbol string, data *types.TokenData, confi
 	for _, k := range ohlcvData {
 		closes = append(closes, k.Close)
 	}
-
+	price := closes[len(closes)-2]
 	ema25 := CalculateEMA(closes, 25)
 	ema50 := CalculateEMA(closes, 50)
 	ema169 := CalculateEMA(closes, 169)
+	ma60 := CalculateMA(closes, 60)
+	UpMACD := IsAboutToGoldenCross(closes, 6, 13, 5)
+	XUpMACD := IsGolden(closes, 6, 13, 5)
 
 	lastEMA25 := ema25[len(ema25)-1]
 	lastEMA50 := ema50[len(ema50)-1]
@@ -64,13 +67,20 @@ func Update5minEMA25ToDB(db *sql.DB, symbol string, data *types.TokenData, confi
 	lastTime := ohlcvData[len(ohlcvData)-1].Timestamp
 	_, kLine, _ := StochRSIFromClose(closes, 14, 14, 3, 3)
 	lastKLine := kLine[len(kLine)-1]
-	UpMACD := IsAboutToGoldenCross(closes, 6, 13, 5)
-	XUpMACD := IsGolden(closes, 6, 13, 5)
+
+	var status string
+	if lastEMA25 > ma60 && UpMACD && price > ma60 {
+		status = "BUYMACD"
+	} else if lastEMA25 < ma60 && XUpMACD && price > lastEMA25 && price > ma60 {
+		status = "BUYMACD"
+	} else {
+		status = "RANGE"
+	}
 
 	// 写入数据库（UPSERT）
 	_, err = model.DB.Exec(`
-		INSERT INTO symbol_ema_5min (symbol, timestamp, ema25, ema50, ema169, srsi, upmacd, xupmacd)
-		VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+		INSERT INTO symbol_ema_5min (symbol, timestamp, ema25, ema50, ema169, srsi, upmacd, xupmacd, status)
+		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
 		ON DUPLICATE KEY UPDATE
 		timestamp = VALUES(timestamp),
 		ema25 = VALUES(ema25),
@@ -78,16 +88,15 @@ func Update5minEMA25ToDB(db *sql.DB, symbol string, data *types.TokenData, confi
 		ema169 = VALUES(ema169),
 		srsi = VALUES(srsi),
 		upmacd = VALUES(upmacd),
-		xupmacd = VALUES(xupmacd)
-	`, symbol, lastTime, lastEMA25, lastEMA50, lastEMA169, lastKLine, UpMACD, XUpMACD)
+		xupmacd = VALUES(xupmacd),
+		status = VALUES(status)
+	`, symbol, lastTime, lastEMA25, lastEMA50, lastEMA169, lastKLine, UpMACD, XUpMACD, status)
 	if err != nil {
 		log.Printf("写入出错 %s: %v", symbol, err)
 	}
 
-	if lastEMA25 < lastEMA50 {
-		return false
-	}
-	return true
+	GT := price > ma60
+	return GT
 }
 
 func Get5MEMAFromDB(db *sql.DB, symbol string) (ema25, ema50, ema169 float64) {
@@ -115,4 +124,13 @@ func GetMACDFromDB(db *sql.DB, symbol string) (upmacd, xupmacd bool) {
 		return false, false
 	}
 	return upmacd, xupmacd
+}
+
+func Get5MStatusFromDB(db *sql.DB, symbol string) (status string) {
+	err := db.QueryRow("SELECT status FROM symbol_ema_5min WHERE symbol = ?", symbol).Scan(&status)
+	if err != nil {
+		log.Printf("查询 5MStatusFromDB 失败 %s: %v", symbol, err)
+		return ""
+	}
+	return status
 }

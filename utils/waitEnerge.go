@@ -82,30 +82,25 @@ func WaitEnerge(resultsChan chan types.TokenItem, db *sql.DB, wait_sucess_token,
 					}
 					price := closesM1[len(closesM1)-2]
 					EMA25M1 := CalculateEMA(closesM1, 25)
-					EMA50M1 := CalculateEMA(closesM1, 50)
 					MA60M1 := CalculateMA(closesM1, 60)
 					EMA25M5, EMA50M5, _ := Get5MEMAFromDB(model.DB, token.Symbol)
-					EMA25M15, EMA50M15 := Get15MEMAFromDB(model.DB, token.Symbol)
-
-					//TrendUp := price > EMA25M15 && EMA25M15 > EMA50M15 && price > EMA25M5 && EMA25M5 > EMA50M5
-					TrendDownM15 := price < EMA25M15 && EMA25M15 < EMA50M15
-					TrendDownM5 := price < EMA25M5 && EMA25M5 < EMA50M5
 
 					//MACD模型
 					UpMACDM1 := IsAboutToGoldenCrossM1(closesM1, 6, 13, 5) //防插针版
 					XUpMACDM1 := IsGoldenM1(closesM1, 6, 13, 5)
 					var BuyMACDM1 bool
-					M1UPEMA := EMA25M1[len(EMA25M1)-1] > EMA50M1[len(EMA50M1)-1]
-					M1DOWNEMA := EMA25M1[len(EMA25M1)-1] < EMA50M1[len(EMA50M1)-1]
-					if M1UPEMA && UpMACDM1 { //金叉回调
+					M1UPEMA := EMA25M1[len(EMA25M1)-1] > MA60M1
+					M1DOWNEMA := EMA25M1[len(EMA25M1)-1] < MA60M1
+					if M1UPEMA && UpMACDM1 && price > MA60M1 { //金叉回调
 						BuyMACDM1 = true
-					} else if M1DOWNEMA && price > MA60M1 && XUpMACDM1 { //死叉反转
+					} else if M1DOWNEMA && price > EMA25M1[len(EMA25M1)-1] && XUpMACDM1 && price > MA60M1 { //死叉反转
 						BuyMACDM1 = true
 					} else {
 						BuyMACDM1 = false
 					}
-
-					if !TrendDownM15 && !TrendDownM5 && BuyMACDM1 {
+					MACDM15 := Get15MStatusFromDB(model.DB, token.Symbol)
+					MACDM5 := Get5MStatusFromDB(model.DB, token.Symbol)
+					if MACDM15 == "BUYMACD" && MACDM5 == "BUYMACD" && BuyMACDM1 {
 						msg := fmt.Sprintf("监控回响：%s%s\n📬 `%s`", token.TokenItem.Emoje, sym, token.TokenItem.Address)
 						telegram.SendMarkdownMessage(wait_sucess_token, chatID, msg)
 						log.Printf("🟢 等待成功 Buy : %s", sym)

@@ -33,35 +33,32 @@ func AnaylySymbol(data *types.TokenData, config *types.Config, resultsChan chan 
 		MA60 := CalculateMA(closesM1, 60)
 		return closesM1, EMA25M1, EMA50M1, MA60, true
 	}
-	closesM1, EMA25M1, EMA50M1, MA60M1, ok := get1MData()
+	closesM1, EMA25M1, _, MA60M1, ok := get1MData()
 	if !ok {
 		return
 	}
 
 	price := closesM1[len(closesM1)-2]
-	EMA25M5, EMA50M5, _ := Get5MEMAFromDB(model.DB, tokenItem.Symbol)
-	EMA25M15, EMA50M15 := Get15MEMAFromDB(model.DB, tokenItem.Symbol)
-
-	//TrendUp := price > EMA25M15 && EMA25M15 > EMA50M15 && price > EMA25M5 && EMA25M5 > EMA50M5
-	TrendDownM15 := price < EMA25M15 && EMA25M15 < EMA50M15
-	TrendDownM5 := price < EMA25M5 && EMA25M5 < EMA50M5
 
 	//MACD模型
 	UpMACDM1 := IsAboutToGoldenCrossM1(closesM1, 6, 13, 5) //防插针版
 	XUpMACDM1 := IsGoldenM1(closesM1, 6, 13, 5)
 	var BuyMACDM1 bool
-	M1UPEMA := EMA25M1[len(EMA25M1)-1] > EMA50M1[len(EMA50M1)-1]
-	M1DOWNEMA := EMA25M1[len(EMA25M1)-1] < EMA50M1[len(EMA50M1)-1]
-	if M1UPEMA && UpMACDM1 && MA60M1 < EMA25M1[len(EMA25M1)-1] { //金叉回调
+	M1UPEMA := EMA25M1[len(EMA25M1)-1] > MA60M1
+	M1DOWNEMA := EMA25M1[len(EMA25M1)-1] < MA60M1
+	if M1UPEMA && UpMACDM1 && price > MA60M1 { //金叉回调
 		BuyMACDM1 = true
-	} else if M1DOWNEMA && price > MA60M1 && XUpMACDM1 && MA60M1 < EMA25M1[len(EMA25M1)-1] { //死叉反转
+	} else if M1DOWNEMA && price > EMA25M1[len(EMA25M1)-1] && XUpMACDM1 && price > MA60M1 { //死叉反转
 		BuyMACDM1 = true
 	} else {
 		BuyMACDM1 = false
 	}
 
+	MACDM15 := Get15MStatusFromDB(model.DB, tokenItem.Symbol)
+	MACDM5 := Get5MStatusFromDB(model.DB, tokenItem.Symbol)
+
 	// ===== 模型1（优先级最高） =====
-	if !TrendDownM15 && !TrendDownM5 {
+	if MACDM15 == "BUYMACD" && MACDM5 == "BUYMACD" {
 		tokenItem.Emoje = "🟢"
 		if BuyMACDM1 {
 			// 完全满足，直接推送

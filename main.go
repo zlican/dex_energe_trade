@@ -168,8 +168,8 @@ func runScan(resultsChan chan types.TokenItem) {
 				return
 			}
 
-			BoolM5 := utils.Update5minEMA25ToDB(model.DB, symbol, data, config)
-			if !BoolM5 {
+			GTM5 := utils.Update5minEMA25ToDB(model.DB, symbol, data, config)
+			if !GTM5 {
 				return
 			}
 			utils.AnaylySymbol(data, config, resultsChan)
