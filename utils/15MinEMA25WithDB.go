@@ -11,7 +11,7 @@ import (
 	"onchain-energe-SRSI/types"
 )
 
-func Update15minEMA25ToDB(db *sql.DB, symbol string, data *types.TokenData, config *types.Config) (UPEMA, GT bool) {
+func Update15minEMA25ToDB(db *sql.DB, symbol string, data *types.TokenData, config *types.Config) (BUYMACD bool) {
 
 	tokenItem := data.TokenItem
 
@@ -42,7 +42,7 @@ func Update15minEMA25ToDB(db *sql.DB, symbol string, data *types.TokenData, conf
 	// 如果最终仍然失败
 	if err != nil || len(ohlcvData) == 0 {
 		fmt.Printf("[%s] 多次尝试后获取OHLCV数据失败: %v\n", symbol, err)
-		return false, false
+		return false
 	} else {
 		for i, j := 0, len(ohlcvData)-1; i < j; i, j = i+1, j-1 {
 			ohlcvData[i], ohlcvData[j] = ohlcvData[j], ohlcvData[i]
@@ -57,7 +57,7 @@ func Update15minEMA25ToDB(db *sql.DB, symbol string, data *types.TokenData, conf
 	ema25 := CalculateEMA(closes, 25)
 	ema50 := CalculateEMA(closes, 50)
 	ma60 := CalculateMA(closes, 60)
-	UpMACD := IsAboutToGoldenCross(closes, 6, 13, 5)
+	UpMACD := IsGoldenCross(closes, 6, 13, 5)
 	XUpMACD := IsGolden(closes, 6, 13, 5)
 
 	currentPrice := closes[len(closes)-2]
@@ -68,12 +68,12 @@ func Update15minEMA25ToDB(db *sql.DB, symbol string, data *types.TokenData, conf
 	lastKLine := kLine[len(kLine)-1]
 
 	var status string
-	if lastEMA25 > ma60 && UpMACD && price > ma60 {
+	if lastEMA25 > ma60 && UpMACD && (price > ma60 || XUpMACD) {
 		status = "BUYMACD"
 	} else if lastEMA25 < ma60 && XUpMACD && price > lastEMA25 && price > ma60 {
 		status = "BUYMACD"
-	} else {
-		status = "RANGE"
+	} else if price > ma60 {
+		status = "UPRANGE"
 	}
 
 	// 写入数据库（UPSERT）
@@ -92,10 +92,10 @@ func Update15minEMA25ToDB(db *sql.DB, symbol string, data *types.TokenData, conf
 		log.Printf("写入出错 %s: %v", symbol, err)
 	}
 
-	UPEMA = lastEMA25 > lastEMA50
-	GT = price > ma60
-
-	return UPEMA, GT
+	if status == "BUYMACD" {
+		return true
+	}
+	return false
 
 }
 

@@ -83,28 +83,27 @@ func WaitEnerge(resultsChan chan types.TokenItem, db *sql.DB, wait_sucess_token,
 					price := closesM1[len(closesM1)-2]
 					EMA25M1 := CalculateEMA(closesM1, 25)
 					MA60M1 := CalculateMA(closesM1, 60)
-					EMA25M5, EMA50M5, _ := Get5MEMAFromDB(model.DB, token.Symbol)
 
 					//MACD模型
-					UpMACDM1 := IsAboutToGoldenCrossM1(closesM1, 6, 13, 5) //防插针版
-					XUpMACDM1 := IsGoldenM1(closesM1, 6, 13, 5)
-					var BuyMACDM1 bool
+					UpMACDM1 := IsGoldenCross(closesM1, 6, 13, 5) //防插针版
+					XUpMACDM1 := IsGolden(closesM1, 6, 13, 5)
+					var MACDM1 string
 					M1UPEMA := EMA25M1[len(EMA25M1)-1] > MA60M1
 					M1DOWNEMA := EMA25M1[len(EMA25M1)-1] < MA60M1
-					if M1UPEMA && UpMACDM1 && price > MA60M1 { //金叉回调
-						BuyMACDM1 = true
+					if M1UPEMA && UpMACDM1 && (price > MA60M1 || XUpMACDM1) { //金叉回调
+						MACDM1 = "BUYMACD"
 					} else if M1DOWNEMA && price > EMA25M1[len(EMA25M1)-1] && XUpMACDM1 && price > MA60M1 { //死叉反转
-						BuyMACDM1 = true
-					} else {
-						BuyMACDM1 = false
+						MACDM1 = "BUYMACD"
+					} else if price > MA60M1 {
+						MACDM1 = "UPRANGE"
 					}
 					MACDM15 := Get15MStatusFromDB(model.DB, token.Symbol)
 					MACDM5 := Get5MStatusFromDB(model.DB, token.Symbol)
-					if MACDM15 == "BUYMACD" && MACDM5 == "BUYMACD" && BuyMACDM1 {
+					if MACDM15 == "BUYMACD" && (MACDM5 == "BUYMACD" || MACDM5 == "UPRANGE") && (MACDM1 == "BUYMACD" || MACDM1 == "UPRANGE") {
 						msg := fmt.Sprintf("监控回响：%s%s\n📬 `%s`", token.TokenItem.Emoje, sym, token.TokenItem.Address)
 						telegram.SendMarkdownMessage(wait_sucess_token, chatID, msg)
 						log.Printf("🟢 等待成功 Buy : %s", sym)
-					} else if EMA25M5 < EMA50M5 {
+					} else if MACDM15 != "BUYMACD" {
 						log.Printf("❌ Wait失败 Buy : %s", sym)
 						waitMu.Lock()
 						delete(waitList, sym)

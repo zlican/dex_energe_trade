@@ -11,7 +11,7 @@ import (
 	"onchain-energe-SRSI/types"
 )
 
-func Update5minEMA25ToDB(db *sql.DB, symbol string, data *types.TokenData, config *types.Config) bool {
+func Update5minEMA25ToDB(db *sql.DB, symbol string, data *types.TokenData, config *types.Config) (BUYMACD bool) {
 
 	tokenItem := data.TokenItem
 
@@ -58,7 +58,7 @@ func Update5minEMA25ToDB(db *sql.DB, symbol string, data *types.TokenData, confi
 	ema50 := CalculateEMA(closes, 50)
 	ema169 := CalculateEMA(closes, 169)
 	ma60 := CalculateMA(closes, 60)
-	UpMACD := IsAboutToGoldenCross(closes, 6, 13, 5)
+	UpMACD := IsGoldenCross(closes, 6, 13, 5)
 	XUpMACD := IsGolden(closes, 6, 13, 5)
 
 	lastEMA25 := ema25[len(ema25)-1]
@@ -69,12 +69,12 @@ func Update5minEMA25ToDB(db *sql.DB, symbol string, data *types.TokenData, confi
 	lastKLine := kLine[len(kLine)-1]
 
 	var status string
-	if lastEMA25 > ma60 && UpMACD && price > ma60 {
+	if lastEMA25 > ma60 && UpMACD && (price > ma60 || XUpMACD) {
 		status = "BUYMACD"
 	} else if lastEMA25 < ma60 && XUpMACD && price > lastEMA25 && price > ma60 {
 		status = "BUYMACD"
-	} else {
-		status = "RANGE"
+	} else if price > ma60 {
+		status = "UPRANGE"
 	}
 
 	// 写入数据库（UPSERT）
@@ -95,8 +95,10 @@ func Update5minEMA25ToDB(db *sql.DB, symbol string, data *types.TokenData, confi
 		log.Printf("写入出错 %s: %v", symbol, err)
 	}
 
-	GT := price > ma60
-	return GT
+	if status == "BUYMACD" || status == "UPRANGE" {
+		return true
+	}
+	return false
 }
 
 func Get5MEMAFromDB(db *sql.DB, symbol string) (ema25, ema50, ema169 float64) {

@@ -17,50 +17,27 @@ func CalculateMACD(closePrices []float64, fastPeriod, slowPeriod, signalPeriod i
 }
 
 // 判断是否做多
-func IsAboutToGoldenCross(closePrices []float64, fastPeriod, slowPeriod, signalPeriod int) bool {
+func IsGoldenCross(closePrices []float64, fastPeriod, slowPeriod, signalPeriod int) bool {
 	if len(closePrices) < slowPeriod+signalPeriod+1 {
 		return false
 	}
-	_, _, histogram := CalculateMACD(closePrices, fastPeriod, slowPeriod, signalPeriod)
-	if len(histogram) < 4 {
+	macd, _, histogram := CalculateMACD(closePrices, fastPeriod, slowPeriod, signalPeriod)
+	if len(histogram) < 5 {
 		return false
 	}
 
-	B := histogram[len(histogram)-3]
-	C := histogram[len(histogram)-2]
-	D := histogram[len(histogram)-1]
+	A := histogram[len(histogram)-5]
+	B := histogram[len(histogram)-4]
+	C := histogram[len(histogram)-3]
+	D := histogram[len(histogram)-2]
 
-	// 条件一：最新柱为正
-	if D > 0 {
+	dif := macd[len(macd)-1]
+	// 二：旧正 且不是4连降
+	if dif > 0 && D > 0 && !(A > 0 && B > 0 && C > 0 && D > 0 && A > B && B > C && C > D) {
 		return true
 	}
-	// 条件二：左两个不是下跌就行
-	if !(B > C) {
-		return true
-	}
-	return false
-}
-
-// 判断是否做多（一分钟防插针版）
-func IsAboutToGoldenCrossM1(closePrices []float64, fastPeriod, slowPeriod, signalPeriod int) bool {
-	if len(closePrices) < slowPeriod+signalPeriod+1 {
-		return false
-	}
-	_, _, histogram := CalculateMACD(closePrices, fastPeriod, slowPeriod, signalPeriod)
-	if len(histogram) < 4 {
-		return false
-	}
-
-	B := histogram[len(histogram)-3]
-	C := histogram[len(histogram)-2]
-	D := histogram[len(histogram)-1]
-
-	// 条件一：最新柱为正
-	if D > 0 && C > 0 {
-		return true
-	}
-	// 条件二：左两个不是连跌就行
-	if !(B > C) {
+	// 三：（皆负）旧两个不是下跌就行
+	if dif > 0 && D > C {
 		return true
 	}
 	return false
@@ -72,36 +49,19 @@ func IsGolden(closePrices []float64, fastPeriod, slowPeriod, signalPeriod int) b
 		return false
 	}
 
-	_, _, histogram := CalculateMACD(closePrices, fastPeriod, slowPeriod, signalPeriod)
-	if len(histogram) < 4 {
+	macd, _, histogram := CalculateMACD(closePrices, fastPeriod, slowPeriod, signalPeriod)
+	if len(histogram) < 5 {
 		return false
 	}
 
-	D := histogram[len(histogram)-1]
+	A := histogram[len(histogram)-5]
+	B := histogram[len(histogram)-4]
+	C := histogram[len(histogram)-3]
+	D := histogram[len(histogram)-2]
+	dif := macd[len(macd)-1]
 
-	// 条件一：最新柱为正
-	if D > 0 {
-		return true
-	}
-	return false
-}
-
-// 判断是否为正（1分钟防插针版）
-func IsGoldenM1(closePrices []float64, fastPeriod, slowPeriod, signalPeriod int) bool {
-	if len(closePrices) < slowPeriod+signalPeriod+1 {
-		return false
-	}
-
-	_, _, histogram := CalculateMACD(closePrices, fastPeriod, slowPeriod, signalPeriod)
-	if len(histogram) < 3 {
-		return false
-	}
-
-	C := histogram[len(histogram)-2]
-	D := histogram[len(histogram)-1]
-
-	// 条件一：最新柱为正
-	if D > 0 && C > 0 {
+	// 二：旧正 且不是4连降
+	if dif > 0 && D > 0 && !(A > 0 && B > 0 && C > 0 && D > 0 && A > B && B > C && C > D) {
 		return true
 	}
 	return false

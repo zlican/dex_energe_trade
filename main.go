@@ -163,13 +163,13 @@ func runScan(resultsChan chan types.TokenItem) {
 			sem <- struct{}{}
 			defer func() { <-sem }()
 
-			_, GT := utils.Update15minEMA25ToDB(model.DB, symbol, data, config)
-			if !GT {
+			MACDM15 := utils.Update15minEMA25ToDB(model.DB, symbol, data, config)
+			if !MACDM15 {
 				return
 			}
 
-			GTM5 := utils.Update5minEMA25ToDB(model.DB, symbol, data, config)
-			if !GTM5 {
+			MACDM5 := utils.Update5minEMA25ToDB(model.DB, symbol, data, config)
+			if !MACDM5 {
 				return
 			}
 			utils.AnaylySymbol(data, config, resultsChan)
