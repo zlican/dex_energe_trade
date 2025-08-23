@@ -16,53 +16,32 @@ func CalculateMACD(closePrices []float64, fastPeriod, slowPeriod, signalPeriod i
 	return
 }
 
-// 判断是否做多
-func IsGoldenCross(closePrices []float64, fastPeriod, slowPeriod, signalPeriod int) bool {
-	if len(closePrices) < slowPeriod+signalPeriod+1 {
-		return false
-	}
-	macd, _, histogram := CalculateMACD(closePrices, fastPeriod, slowPeriod, signalPeriod)
-	if len(histogram) < 5 {
-		return false
-	}
-
-	A := histogram[len(histogram)-5]
-	B := histogram[len(histogram)-4]
-	C := histogram[len(histogram)-3]
-	D := histogram[len(histogram)-2]
-
-	dif := macd[len(macd)-1]
-	// 二：旧正 且不是4连降
-	if dif > 0 && D > 0 && !(A > 0 && B > 0 && C > 0 && D > 0 && A > B && B > C && C > D) {
-		return true
-	}
-	// 三：（皆负）旧两个不是下跌就行
-	if dif > 0 && D > C {
-		return true
-	}
-	return false
-}
-
 //为正
 func IsGolden(closePrices []float64, fastPeriod, slowPeriod, signalPeriod int) bool {
 	if len(closePrices) < slowPeriod+signalPeriod+1 {
 		return false
 	}
 
-	macd, _, histogram := CalculateMACD(closePrices, fastPeriod, slowPeriod, signalPeriod)
+	_, _, histogram := CalculateMACD(closePrices, fastPeriod, slowPeriod, signalPeriod)
 	if len(histogram) < 5 {
 		return false
 	}
+	D := histogram[len(histogram)-1]
 
-	A := histogram[len(histogram)-5]
-	B := histogram[len(histogram)-4]
-	C := histogram[len(histogram)-3]
-	D := histogram[len(histogram)-2]
-	dif := macd[len(macd)-1]
-
-	// 二：旧正 且不是4连降
-	if dif > 0 && D > 0 && !(A > 0 && B > 0 && C > 0 && D > 0 && A > B && B > C && C > D) {
+	if D > 0 {
 		return true
 	}
 	return false
+}
+
+// 判断DEA趋势
+func IsDEAUP(closePrices []float64, fastPeriod, slowPeriod, signalPeriod int) bool {
+	if len(closePrices) < slowPeriod+signalPeriod+1 {
+		return false
+	}
+	_, DEA, histogram := CalculateMACD(closePrices, fastPeriod, slowPeriod, signalPeriod)
+	if len(histogram) < 5 {
+		return false
+	}
+	return DEA[len(DEA)-1] > 0
 }

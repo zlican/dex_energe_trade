@@ -41,17 +41,9 @@ func AnaylySymbol(data *types.TokenData, config *types.Config, resultsChan chan 
 	price := closesM1[len(closesM1)-2]
 
 	//MACD模型
-	UpMACDM1 := IsGoldenCross(closesM1, 6, 13, 5)
-	XUpMACDM1 := IsGolden(closesM1, 6, 13, 5)
 	var MACDM1 string
-	M1UPEMA := EMA25M1[len(EMA25M1)-1] > MA60M1
-	M1DOWNEMA := EMA25M1[len(EMA25M1)-1] < MA60M1
-	if M1UPEMA && UpMACDM1 && (price > MA60M1 || XUpMACDM1) { //金叉回调
+	if price > MA60M1 && price > EMA25M1[len(EMA25M1)-1] {
 		MACDM1 = "BUYMACD"
-	} else if M1DOWNEMA && price > EMA25M1[len(EMA25M1)-1] && XUpMACDM1 && price > MA60M1 { //死叉反转
-		MACDM1 = "BUYMACD"
-	} else if price > MA60M1 {
-		MACDM1 = "UPRANGE"
 	}
 
 	MACDM15 := Get15MStatusFromDB(model.DB, tokenItem.Symbol)
@@ -60,7 +52,7 @@ func AnaylySymbol(data *types.TokenData, config *types.Config, resultsChan chan 
 	// ===== 模型1（优先级最高） =====
 	if MACDM15 == "BUYMACD" {
 		tokenItem.Emoje = "🟢"
-		if (MACDM5 == "BUYMACD" || MACDM5 == "UPRANGE") && (MACDM1 == "BUYMACD" || MACDM1 == "UPRANGE") {
+		if MACDM5 == "BUYMACD" && MACDM1 == "BUYMACD" {
 			// 完全满足，直接推送
 			msg := fmt.Sprintf("🟢%s\n📬 `%s`", data.Symbol, data.TokenItem.Address)
 			if err := telegram.SendMarkdownMessage(config.BotToken, config.ChatID, msg); err != nil {

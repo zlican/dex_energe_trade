@@ -53,12 +53,8 @@ func Update15minEMA25ToDB(db *sql.DB, symbol string, data *types.TokenData, conf
 	for _, k := range ohlcvData {
 		closes = append(closes, k.Close)
 	}
-	price := closes[len(closes)-2]
 	ema25 := CalculateEMA(closes, 25)
 	ema50 := CalculateEMA(closes, 50)
-	ma60 := CalculateMA(closes, 60)
-	UpMACD := IsGoldenCross(closes, 6, 13, 5)
-	XUpMACD := IsGolden(closes, 6, 13, 5)
 
 	currentPrice := closes[len(closes)-2]
 	lastEMA25 := ema25[len(ema25)-1]
@@ -66,13 +62,12 @@ func Update15minEMA25ToDB(db *sql.DB, symbol string, data *types.TokenData, conf
 	lastTime := ohlcvData[len(ohlcvData)-1].Timestamp
 	_, kLine, _ := StochRSIFromClose(closes, 14, 14, 3, 3)
 	lastKLine := kLine[len(kLine)-1]
+	golden := IsGolden(closes, 6, 13, 5)
 
 	var status string
-	if lastEMA25 > ma60 && UpMACD && (price > ma60 || XUpMACD) {
+	if golden {
 		status = "BUYMACD"
-	} else if lastEMA25 < ma60 && XUpMACD && price > lastEMA25 && price > ma60 {
-		status = "BUYMACD"
-	} else if price > ma60 {
+	} else {
 		status = "UPRANGE"
 	}
 

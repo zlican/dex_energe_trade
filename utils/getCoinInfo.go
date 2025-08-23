@@ -79,7 +79,7 @@ func FetchRankData(Fetchurl string, proxy string) ([]*types.TokenItem, error) {
 	var tokenList []*types.TokenItem
 	seen := make(map[string]struct{}) // 去重: 按链+地址
 	for _, item := range result.Data.Rank {
-		if item.SmartDegenCount < 3 && item.RenownedCount < 3 {
+		if item.SmartDegenCount < 4 && item.RenownedCount < 4 {
 			continue
 		}
 		item.Chain = "solana"

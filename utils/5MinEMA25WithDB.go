@@ -57,8 +57,7 @@ func Update5minEMA25ToDB(db *sql.DB, symbol string, data *types.TokenData, confi
 	ema25 := CalculateEMA(closes, 25)
 	ema50 := CalculateEMA(closes, 50)
 	ema169 := CalculateEMA(closes, 169)
-	ma60 := CalculateMA(closes, 60)
-	UpMACD := IsGoldenCross(closes, 6, 13, 5)
+	UpMACD := false
 	XUpMACD := IsGolden(closes, 6, 13, 5)
 
 	lastEMA25 := ema25[len(ema25)-1]
@@ -67,14 +66,13 @@ func Update5minEMA25ToDB(db *sql.DB, symbol string, data *types.TokenData, confi
 	lastTime := ohlcvData[len(ohlcvData)-1].Timestamp
 	_, kLine, _ := StochRSIFromClose(closes, 14, 14, 3, 3)
 	lastKLine := kLine[len(kLine)-1]
+	DEAUP := IsDEAUP(closes, 6, 13, 5)
 
 	var status string
-	if lastEMA25 > ma60 && UpMACD && (price > ma60 || XUpMACD) {
+	if price > lastEMA25 && DEAUP {
 		status = "BUYMACD"
-	} else if lastEMA25 < ma60 && XUpMACD && price > lastEMA25 && price > ma60 {
-		status = "BUYMACD"
-	} else if price > ma60 {
-		status = "UPRANGE"
+	} else {
+		status = "RANGE"
 	}
 
 	// 写入数据库（UPSERT）
@@ -95,7 +93,7 @@ func Update5minEMA25ToDB(db *sql.DB, symbol string, data *types.TokenData, confi
 		log.Printf("写入出错 %s: %v", symbol, err)
 	}
 
-	if status == "BUYMACD" || status == "UPRANGE" {
+	if status == "BUYMACD" {
 		return true
 	}
 	return false
