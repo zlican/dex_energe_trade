@@ -91,11 +91,9 @@ func WaitEnerge(resultsChan chan types.TokenItem, db *sql.DB, wait_sucess_token,
 					MACDM15 := Get15MStatusFromDB(model.DB, token.Symbol)
 					MACDM5 := Get5MStatusFromDB(model.DB, token.Symbol)
 					if MACDM15 == "BUYMACD" && MACDM5 == "BUYMACD" && MACDM1 == "BUYMACD" {
-						msg := fmt.Sprintf("监控回响：%s%s\n📬 `%s`", token.TokenItem.Emoje, sym, token.TokenItem.Address)
+						msg := fmt.Sprintf("%s%s\n📬 `%s`", token.TokenItem.Emoje, sym, token.TokenItem.Address)
 						telegram.SendMarkdownMessage(wait_sucess_token, chatID, msg)
-						log.Printf("🟢 等待成功 Buy : %s", sym)
-					} else if MACDM15 != "BUYMACD" {
-						log.Printf("❌ Wait失败 Buy : %s", sym)
+					} else if EMA25M1[len(EMA25M1)-1] < MA60M1 { //最小级别死叉即等待失败
 						waitMu.Lock()
 						delete(waitList, sym)
 						waitMu.Unlock()
