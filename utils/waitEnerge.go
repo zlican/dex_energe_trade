@@ -4,7 +4,6 @@ import (
 	"database/sql"
 	"fmt"
 	"log"
-	"onchain-energe-SRSI/model"
 	"onchain-energe-SRSI/telegram"
 	"onchain-energe-SRSI/types"
 	"strings"
@@ -83,17 +82,34 @@ func WaitEnerge(resultsChan chan types.TokenItem, db *sql.DB, wait_sucess_token,
 					price := closesM1[len(closesM1)-2]
 					EMA25M1 := CalculateEMA(closesM1, 25)
 					MA60M1 := CalculateMA(closesM1, 60)
+
+					optionsM5 := map[string]string{
+						"aggregate":               config.FiveAggregate,
+						"limit":                   "200", // 只获取最新的几条数据即可
+						"token":                   "base",
+						"currency":                "usd",
+						"include_empty_intervals": "true",
+					}
+					closesM5, err := GetClosesByAPI(token.TokenItem, config, optionsM5)
+					if err != nil {
+						return
+					}
+					EMA25M5 := CalculateEMA(closesM5, 25)
+
 					//MACD模型
-					var MACDM1 string
+					var MACDM1, MACDM5 string
 					if price > MA60M1 && price > EMA25M1[len(EMA25M1)-1] {
 						MACDM1 = "BUYMACD"
 					}
-					MACDM15 := Get15MStatusFromDB(model.DB, token.Symbol)
-					MACDM5 := Get5MStatusFromDB(model.DB, token.Symbol)
-					if MACDM15 == "BUYMACD" && MACDM5 == "BUYMACD" && MACDM1 == "BUYMACD" {
+					DEAUP := IsDEAUP(closesM5, 6, 13, 5)
+					if price > EMA25M5[len(EMA25M5)-1] && DEAUP {
+						MACDM5 = "BUYMACD"
+					}
+
+					if MACDM5 == "BUYMACD" && MACDM1 == "BUYMACD" {
 						msg := fmt.Sprintf("%s%s\n📬 `%s`", token.TokenItem.Emoje, sym, token.TokenItem.Address)
 						telegram.SendMarkdownMessage(wait_sucess_token, chatID, msg)
-					} else if EMA25M1[len(EMA25M1)-1] < MA60M1 { //最小级别死叉即等待失败
+					} else if MACDM5 != "BUYMACD" {
 						waitMu.Lock()
 						delete(waitList, sym)
 						waitMu.Unlock()
