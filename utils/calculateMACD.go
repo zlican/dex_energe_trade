@@ -17,6 +17,31 @@ func CalculateMACD(closePrices []float64, fastPeriod, slowPeriod, signalPeriod i
 }
 
 //为正
+func IsGoldenUP(closePrices []float64, fastPeriod, slowPeriod, signalPeriod int) bool {
+	if len(closePrices) < slowPeriod+signalPeriod+1 {
+		return false
+	}
+
+	_, _, histogram := CalculateMACD(closePrices, fastPeriod, slowPeriod, signalPeriod)
+	if len(histogram) < 5 {
+		return false
+	}
+
+	C := histogram[len(histogram)-3]
+	D := histogram[len(histogram)-2]
+	E := histogram[len(histogram)-1]
+
+	if E > 0 {
+		return true
+	}
+	if C < 0 && D < 0 && C < D {
+		return true
+	}
+
+	return false
+}
+
+//为正
 func IsGolden(closePrices []float64, fastPeriod, slowPeriod, signalPeriod int) bool {
 	if len(closePrices) < slowPeriod+signalPeriod+1 {
 		return false

@@ -62,13 +62,13 @@ func Update15minEMA25ToDB(db *sql.DB, symbol string, data *types.TokenData, conf
 	lastTime := ohlcvData[len(ohlcvData)-1].Timestamp
 	_, kLine, _ := StochRSIFromClose(closes, 14, 14, 3, 3)
 	lastKLine := kLine[len(kLine)-1]
-	golden := IsGolden(closes, 6, 13, 5)
+	goldenUP := IsGoldenUP(closes, 6, 13, 5)
 
 	var status string
-	if golden {
+	if goldenUP {
 		status = "BUYMACD"
 	} else {
-		status = "UPRANGE"
+		status = "RANGE"
 	}
 
 	// 写入数据库（UPSERT）
