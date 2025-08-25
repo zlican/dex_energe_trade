@@ -12,9 +12,10 @@ import (
 )
 
 type waitToken struct {
-	Symbol    string
-	TokenItem types.TokenItem
-	AddedAt   time.Time
+	Symbol              string
+	TokenItem           types.TokenItem
+	AddedAt             time.Time
+	LastPushedOperation string // 新增字段：记录最后一次推送的操作
 }
 
 var waitMu sync.Mutex
@@ -107,13 +108,27 @@ func WaitEnerge(resultsChan chan types.TokenItem, db *sql.DB, wait_sucess_token,
 					}
 
 					if MACDM5 == "BUYMACD" && MACDM1 == "BUYMACD" {
-						msg := fmt.Sprintf("%s%s\n📬 `%s`", token.TokenItem.Emoje, sym, token.TokenItem.Address)
-						telegram.SendMarkdownMessage(wait_sucess_token, chatID, msg)
+						if token.LastPushedOperation != "BUY" {
+							msg := fmt.Sprintf("%s%s\n📬 `%s`", token.TokenItem.Emoje, sym, token.TokenItem.Address)
+							telegram.SendMarkdownMessage(wait_sucess_token, chatID, msg)
+							waitMu.Lock()
+							t := waitList[sym]
+							t.LastPushedOperation = "BUY"
+							waitList[sym] = t
+							waitMu.Unlock()
+						}
 					} else if MACDM5 != "BUYMACD" {
 						waitMu.Lock()
 						delete(waitList, sym)
 						waitMu.Unlock()
 						changed = true
+					} else {
+						log.Printf("❌ 信号失效，重置状态: %s", sym)
+						waitMu.Lock()
+						t := waitList[sym]
+						t.LastPushedOperation = "" // 清空，允许下次推送
+						waitList[sym] = t
+						waitMu.Unlock()
 					}
 
 					if now.Sub(token.AddedAt) > 3*time.Hour {

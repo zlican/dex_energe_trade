@@ -50,6 +50,10 @@ func IsGoldenUP(closePrices []float64, fastPeriod, slowPeriod, signalPeriod int)
 	if E > 0 {
 		return true
 	}
+	if D > 0 {
+		return true
+	}
+
 	if C < 0 && D < 0 && C < D {
 		return true
 	}
@@ -67,11 +71,16 @@ func IsGolden(closePrices []float64, fastPeriod, slowPeriod, signalPeriod int) b
 	if len(histogram) < 5 {
 		return false
 	}
-	D := histogram[len(histogram)-1]
+	D := histogram[len(histogram)-2]
+	E := histogram[len(histogram)-1]
 
+	if E > 0 {
+		return true
+	}
 	if D > 0 {
 		return true
 	}
+
 	return false
 }
 
