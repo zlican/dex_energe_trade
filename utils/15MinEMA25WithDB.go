@@ -60,8 +60,7 @@ func Update15minEMA25ToDB(db *sql.DB, symbol string, data *types.TokenData, conf
 	lastEMA25 := ema25[len(ema25)-1]
 	lastEMA50 := ema50[len(ema50)-1]
 	lastTime := ohlcvData[len(ohlcvData)-1].Timestamp
-	_, kLine, _ := StochRSIFromClose(closes, 14, 14, 3, 3)
-	lastKLine := kLine[len(kLine)-1]
+	lastKLine := 0.0
 	goldenUP := IsGoldenUP(closes, 6, 13, 5)
 
 	var status string
