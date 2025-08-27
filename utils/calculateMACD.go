@@ -43,7 +43,6 @@ func IsGoldenUP(closePrices []float64, fastPeriod, slowPeriod, signalPeriod int)
 		return false
 	}
 
-	C := histogram[len(histogram)-3]
 	D := histogram[len(histogram)-2]
 	E := histogram[len(histogram)-1]
 
@@ -54,7 +53,7 @@ func IsGoldenUP(closePrices []float64, fastPeriod, slowPeriod, signalPeriod int)
 		return true
 	}
 
-	if C < 0 && D < 0 && C < D {
+	if D < 0 && E < 0 && D < E {
 		return true
 	}
 
@@ -68,7 +67,7 @@ func IsGolden(closePrices []float64, fastPeriod, slowPeriod, signalPeriod int) b
 	}
 
 	_, _, histogram := CalculateMACD(closePrices, fastPeriod, slowPeriod, signalPeriod)
-	if len(histogram) < 5 {
+	if len(histogram) < 2 {
 		return false
 	}
 	D := histogram[len(histogram)-2]
@@ -90,8 +89,29 @@ func IsDEAUP(closePrices []float64, fastPeriod, slowPeriod, signalPeriod int) bo
 		return false
 	}
 	_, DEA, histogram := CalculateMACD(closePrices, fastPeriod, slowPeriod, signalPeriod)
-	if len(histogram) < 5 {
+	if len(histogram) < 2 {
 		return false
 	}
 	return DEA[len(DEA)-1] > 0
+}
+
+//为正
+func UPUP(closePrices []float64, fastPeriod, slowPeriod, signalPeriod int) bool {
+	if len(closePrices) < slowPeriod+signalPeriod+1 {
+		return false
+	}
+
+	_, _, histogram := CalculateMACD(closePrices, fastPeriod, slowPeriod, signalPeriod)
+	if len(histogram) < 2 {
+		return false
+	}
+
+	D := histogram[len(histogram)-2]
+	E := histogram[len(histogram)-1]
+
+	if E > D {
+		return true
+	}
+
+	return false
 }

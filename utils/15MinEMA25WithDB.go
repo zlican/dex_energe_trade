@@ -55,16 +55,20 @@ func Update15minEMA25ToDB(db *sql.DB, symbol string, data *types.TokenData, conf
 	}
 	ema25 := CalculateEMA(closes, 25)
 	ema50 := CalculateEMA(closes, 50)
+	ma60 := CalculateMA(closes, 60)
 
-	currentPrice := closes[len(closes)-2]
+	currentPrice := closes[len(closes)-1]
 	lastEMA25 := ema25[len(ema25)-1]
 	lastEMA50 := ema50[len(ema50)-1]
 	lastTime := ohlcvData[len(ohlcvData)-1].Timestamp
 	lastKLine := 0.0
 	goldenUP := IsGoldenUP(closes, 6, 13, 5)
+	UPUP := UPUP(closes, 6, 13, 5)
 
 	var status string
-	if goldenUP {
+	if currentPrice < ma60 && UPUP {
+		status = "BUYMACD"
+	} else if currentPrice > ma60 && goldenUP {
 		status = "BUYMACD"
 	} else {
 		status = "RANGE"
