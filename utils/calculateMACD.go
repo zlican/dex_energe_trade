@@ -102,16 +102,13 @@ func UPUP(closePrices []float64, fastPeriod, slowPeriod, signalPeriod int) bool 
 	}
 
 	_, _, histogram := CalculateMACD(closePrices, fastPeriod, slowPeriod, signalPeriod)
-	if len(histogram) < 2 {
+	if len(histogram) < 3 {
 		return false
 	}
 
+	C := histogram[len(histogram)-3]
 	D := histogram[len(histogram)-2]
 	E := histogram[len(histogram)-1]
 
-	if E > D {
-		return true
-	}
-
-	return false
+	return E > D || D > C
 }
