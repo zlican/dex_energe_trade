@@ -56,6 +56,7 @@ func Update5minEMA25ToDB(db *sql.DB, symbol string, data *types.TokenData, confi
 	price := closes[len(closes)-2]
 	ema25 := CalculateEMA(closes, 25)
 	ema50 := CalculateEMA(closes, 50)
+	ma60 := CalculateMA(closes, 60)
 	ema169 := CalculateEMA(closes, 169)
 	UpMACD := false
 	XUpMACD := IsGolden(closes, 6, 13, 5)
@@ -65,10 +66,10 @@ func Update5minEMA25ToDB(db *sql.DB, symbol string, data *types.TokenData, confi
 	lastEMA169 := ema169[len(ema169)-1]
 	lastTime := ohlcvData[len(ohlcvData)-1].Timestamp
 	lastKLine := 0.0
-	DEAUP := IsDEAUP(closes, 6, 13, 5)
+	DIFUP := IsDIFUP(closes, 6, 13, 5)
 
 	var status string
-	if price > lastEMA25 && DEAUP {
+	if price > lastEMA25 && price > ma60 && DIFUP {
 		status = "BUYMACD"
 	} else {
 		status = "RANGE"
