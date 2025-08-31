@@ -7,7 +7,7 @@
   "d_period": 4,
   "botToken": "8131367354:AAFDwI2RrW7hcwRE364phlXlqgt2DQYuY_4", 
   "chatId": "6074996357",
-  "url": "https://gmgn.ai/api/v1/rank/sol/swaps/5m?device_id=c244267e-b4fe-4e31-94bf-4828472cc03e&fp_did=7d3f6211c4665ac29aabc0cabef54142&client_id=gmgn_web_20250827-3061-8dfca9d&from_app=gmgn&app_ver=20250827-3061-8dfca9d&tz_name=Asia%2FShanghai&tz_offset=28800&app_lang=zh-CN&os=web&orderby=volume&direction=desc&filters[]=renounced&filters[]=frozen&filters[]=distribed&filters[]=not_wash_trading&min_created=300m&min_liquidity=100000&min_marketcap=200000&max_marketcap=30000000&min_holder_count=2000&min_swaps=70&min_volume=10000",
+  "url": "https://api.axiom.trade/new-trending?timePeriod=5m",
   "timeframe": "minute",
   "1_aggregate": "1",
   "5_aggregate": "5",
