@@ -22,6 +22,7 @@ type AxiomToken struct {
 	LiquiditySol     float64 `json:"liquiditySol"`
 	LiquidityToken   float64 `json:"liquidityToken"`
 	NumHolders       int     `json:"numHolders"`
+	Top10Holders     float64 `json:"top10Holders"`
 	Website          string  `json:"website"`
 	Twitter          string  `json:"twitter"`
 	Telegram         string  `json:"telegram"`
@@ -83,8 +84,8 @@ func FetchRankData(fetchURL string, proxy string) ([]*types.TokenItem, error) {
 	// 转换成内部结构
 	var tokenList []*types.TokenItem
 	for _, at := range axiomTokens {
-		// 过滤条件：交易次数 > 50, 市值 > 500 SOL, 持币人数 > 500
-		if at.TransactionCount < 50 || at.MarketCapSol < 500 || at.NumHolders < 500 {
+		// 过滤条件：交易次数 > 50, 市值 > 500 SOL, 持币人数 > 1000, SOL流动性 > 300, TOP10 < 25
+		if at.TransactionCount < 50 || at.MarketCapSol < 500 || at.NumHolders < 1000 || at.LiquiditySol < 300 || at.Top10Holders > 25 {
 			continue
 		}
 
@@ -97,6 +98,7 @@ func FetchRankData(fetchURL string, proxy string) ([]*types.TokenItem, error) {
 			Liquidity:       at.LiquiditySol,
 			MarketCap:       at.MarketCapSol,
 			HolderCount:     at.NumHolders,
+			Top10Hoders:     at.Top10Holders,
 			Buys:            0, // Axiom 没有买卖次数字段
 			Sells:           0,
 			PoolAddress:     at.PairAddress,

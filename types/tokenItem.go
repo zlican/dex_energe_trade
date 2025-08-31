@@ -12,6 +12,7 @@ type TokenItem struct {
 	Liquidity          float64 `json:"liquidity"`
 	MarketCap          float64 `json:"market_cap"`
 	HolderCount        int     `json:"holder_count"`
+	Top10Hoders        float64 `json:"top10Holders"`
 	Buys               int     `json:"buys"`
 	Sells              int     `json:"sells"`
 	PoolTypeStr        string  `json:"pool_type_str"`
