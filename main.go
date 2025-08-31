@@ -53,20 +53,20 @@ func main() {
 		os.Exit(1)
 	}
 	resultsChan := make(chan types.TokenItem, 100)
+	// 启动等待区监控协程
+	go utils.WaitEnerge(
+		resultsChan,
+		model.DB,
+		config.BotToken, // 成功触发推送的 bot
+		config.ChatID,
+		onchain_waiting_bot_token, // 等待区列表推送的 bot
+		config,
+	)
 
 	go func() {
 		// ✅ 首次立即执行
 		fmt.Printf("[runScan] 首次立即执行: %s\n", time.Now().Format("15:04:05"))
 		runScan(resultsChan)
-		// 启动等待区监控协程
-		go utils.WaitEnerge(
-			resultsChan,
-			model.DB,
-			config.BotToken, // 成功触发推送的 bot
-			config.ChatID,
-			onchain_waiting_bot_token, // 等待区列表推送的 bot
-			config,
-		)
 
 		// ✅ 计算下一次 minute%5==0 的对齐时间
 		now := time.Now()

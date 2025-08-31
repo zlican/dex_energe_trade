@@ -154,6 +154,9 @@ func executeWaitCheck(db *sql.DB, wait_sucess_token, chatID, waiting_token strin
 
 func WaitEnerge(resultsChan chan types.TokenItem, db *sql.DB, wait_sucess_token, chatID string, waiting_token string, config *types.Config) {
 	go func() {
+		// 先消费一次已有消息，保证 waitList 不为空
+		drainResults(resultsChan)
+
 		// 🚀 启动时立即执行一次
 		now := time.Now()
 		executeWaitCheck(db, wait_sucess_token, chatID, waiting_token, config, now)
@@ -161,7 +164,7 @@ func WaitEnerge(resultsChan chan types.TokenItem, db *sql.DB, wait_sucess_token,
 		// 等到下一个 1 分钟整点
 		time.Sleep(waitUntilNext1Min())
 
-		// 每 1 分钟触发（分钟 %1==0）
+		// 每 1 分钟触发
 		ticker := time.NewTicker(1 * time.Minute)
 		defer ticker.Stop()
 
@@ -170,28 +173,42 @@ func WaitEnerge(resultsChan chan types.TokenItem, db *sql.DB, wait_sucess_token,
 		}
 	}()
 
-	// 接收新 results 并更新 waitList（逻辑不变）
+	// 常规消费
 	for coin := range resultsChan {
-		var newAdded bool
-		now := time.Now()
+		addToWaitList(coin, waiting_token, chatID)
+	}
+}
 
-		waitMu.Lock()
-		_, exists := waitList[coin.Symbol]
-		if !exists {
-			waitList[coin.Symbol] = waitToken{
-				Symbol:    coin.Symbol,
-				TokenItem: coin,
-				AddedAt:   now,
-			}
-			log.Printf("✅ 添加或替换等待代币: %s", coin.Symbol)
-			newAdded = true
-
+func drainResults(resultsChan chan types.TokenItem) {
+	drain := true
+	for drain {
+		select {
+		case coin := <-resultsChan:
+			addToWaitList(coin, "", "")
+		default:
+			drain = false
 		}
+	}
+}
 
-		waitMu.Unlock()
+func addToWaitList(coin types.TokenItem, waiting_token, chatID string) {
+	var newAdded bool
+	now := time.Now()
 
-		if newAdded {
-			sendWaitListBroadcast(now, waiting_token, chatID)
+	waitMu.Lock()
+	_, exists := waitList[coin.Symbol]
+	if !exists {
+		waitList[coin.Symbol] = waitToken{
+			Symbol:    coin.Symbol,
+			TokenItem: coin,
+			AddedAt:   now,
 		}
+		log.Printf("✅ 添加或替换等待代币: %s", coin.Symbol)
+		newAdded = true
+	}
+	waitMu.Unlock()
+
+	if newAdded && waiting_token != "" {
+		sendWaitListBroadcast(now, waiting_token, chatID)
 	}
 }
