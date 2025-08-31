@@ -47,7 +47,7 @@ func FetchRankData(fetchURL string, proxy string) ([]*types.TokenItem, error) {
 	req.Header.Set("Referer", "https://axiom.trade/")
 	req.Header.Set("Origin", "https://axiom.trade")
 	req.Header.Set("Connection", "keep-alive")
-	req.Header.Set("Cookie", `auth-refresh-token=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJyZWZyZXNoVG9rZW5JZCI6ImJmNTEzOTA1LTkzMWQtNGM4MS04YTM1LWQ0MTRjMzA1MGQ5NyIsImlhdCI6MTc1NjIwMDA1OH0.BhnIPq-GQn-rfFSmTzYE9YoDfiaoM75MMNwEn42tGak; auth-access-token=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJhdXRoZW50aWNhdGVkVXNlcklkIjoiMTA1ZTY4NGItODNmMi00ZGEyLTg0NTEtYjU3MzMxNjFhOTc2IiwiaWF0IjoxNzU2NTk4NTYzLCJleHAiOjE3NTY1OTk1MjN9.LPXw92Y2K-JvlUdFrU2iYXRXbKmfjPkBHmBRM2fF7QU`)
+	req.Header.Set("Cookie", `auth-refresh-token=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJyZWZyZXNoVG9rZW5JZCI6IjY3MmFiNmVjLTM2OWEtNDRmZi1hMDIzLTNmYzY2ZDNlYjA0OSIsImlhdCI6MTc1NjYwNDQyN30.sOBelCw8hB59gXIElPW8MEUB3HFRq28uj5wQjuGQaAQ; auth-access-token=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJhdXRoZW50aWNhdGVkVXNlcklkIjoiMTA1ZTY4NGItODNmMi00ZGEyLTg0NTEtYjU3MzMxNjFhOTc2IiwiaWF0IjoxNzU2NjA0NDI3LCJleHAiOjE3NTY2MDUzODd9.8WwbpMCPKr7ncJhjTy-O6LMaM9mUthnlFiaSbOm8f94`)
 
 	// 客户端（支持代理）
 	client := &http.Client{Timeout: 10 * time.Second}

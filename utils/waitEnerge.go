@@ -61,6 +61,8 @@ func executeWaitCheck(db *sql.DB, wait_sucess_token, chatID, waiting_token strin
 	waitMu.Unlock()
 
 	for sym, token := range waitCopy {
+		MACDM15 := Get15MStatusFromDB(db, sym)
+
 		optionsM1 := map[string]string{
 			"aggregate":               config.OneAggregate,
 			"limit":                   "200", // 只获取最新的几条数据即可
@@ -102,7 +104,7 @@ func executeWaitCheck(db *sql.DB, wait_sucess_token, chatID, waiting_token strin
 			MACDM5 = "BUYMACD"
 		}
 
-		if MACDM5 == "BUYMACD" && MACDM1 == "BUYMACD" {
+		if MACDM15 == "BUYMACD" && MACDM5 == "BUYMACD" && MACDM1 == "BUYMACD" {
 			if token.LastPushedOperation != "BUY" {
 				msg := fmt.Sprintf("%s%s\n📬 `%s`", token.TokenItem.Emoje, sym, token.TokenItem.Address)
 				telegram.SendMarkdownMessage(wait_sucess_token, chatID, msg)
