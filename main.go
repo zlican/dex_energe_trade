@@ -114,10 +114,6 @@ func runScan(resultsChan chan types.TokenItem) {
 	for i := 0; i < maxRetry; i++ {
 		tokenList, err = utils.FetchRankData(config.Url, config.Proxy)
 
-		for i, t := range tokenList {
-			fmt.Println(i, t.Symbol)
-		}
-
 		if err == nil {
 			break
 		}
