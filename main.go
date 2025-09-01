@@ -139,6 +139,7 @@ func runScan(resultsChan chan types.TokenItem) {
 
 	for _, token := range tokenList {
 		symbol := token.Symbol
+		fmt.Println(symbol)
 
 		// 确保 tokenDataMap 里有对应结构（初始化一次）
 		tokenDataMutex.Lock()
