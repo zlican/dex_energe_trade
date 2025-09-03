@@ -78,6 +78,7 @@ func executeWaitCheck(db *sql.DB, wait_sucess_token, chatID, waiting_token strin
 		MA60M1 := CalculateMA(closesM1, 60)
 		EMA25M1 := CalculateEMA(closesM1, 25)
 		EMA25M1NOW := EMA25M1[len(EMA25M1)-1]
+		UPUP := UPUP(closesM1, 6, 13, 5)
 
 		optionsM5 := map[string]string{
 			"aggregate":               config.FiveAggregate,
@@ -96,7 +97,7 @@ func executeWaitCheck(db *sql.DB, wait_sucess_token, chatID, waiting_token strin
 
 		//MACD模型
 		var MACDM1, MACDM5 string
-		if price > EMA25M1NOW && price > MA60M1 {
+		if price > EMA25M1NOW && price > MA60M1 && UPUP {
 			MACDM1 = "BUYMACD"
 		}
 		DIFUP := IsDIFUP(closesM5, 6, 13, 5)
