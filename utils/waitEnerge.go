@@ -61,7 +61,29 @@ func executeWaitCheck(db *sql.DB, wait_sucess_token, chatID, waiting_token strin
 	waitMu.Unlock()
 
 	for sym, token := range waitCopy {
+		var MACDM1, MACDM5 string
+
 		MACDM15 := Get15MStatusFromDB(db, sym)
+		optionsM5 := map[string]string{
+			"aggregate":               config.FiveAggregate,
+			"limit":                   "200", // 只获取最新的几条数据即可
+			"token":                   "base",
+			"currency":                "usd",
+			"include_empty_intervals": "true",
+		}
+		closesM5, err := GetClosesByAPI(token.TokenItem, config, optionsM5)
+		if err != nil {
+			continue
+		}
+		price := closesM5[len(closesM5)-1]
+		MA60M5 := CalculateMA(closesM5, 60)
+		EMA25M5 := CalculateEMA(closesM5, 25)
+		EMA25M5NOW := EMA25M5[len(EMA25M5)-1]
+		DIFUP := IsDIFUP(closesM5, 6, 13, 5)
+		goldenM5 := IsGolden(closesM5, 6, 13, 5)
+		if price > EMA25M5NOW && price > MA60M5 && DIFUP && goldenM5 {
+			MACDM5 = "BUYMACD"
+		}
 
 		optionsM1 := map[string]string{
 			"aggregate":               config.OneAggregate,
@@ -72,37 +94,14 @@ func executeWaitCheck(db *sql.DB, wait_sucess_token, chatID, waiting_token strin
 		}
 		closesM1, err := GetClosesByAPI(token.TokenItem, config, optionsM1)
 		if err != nil {
-			return
+			continue
 		}
-		price := closesM1[len(closesM1)-2]
 		MA60M1 := CalculateMA(closesM1, 60)
 		EMA25M1 := CalculateEMA(closesM1, 25)
 		EMA25M1NOW := EMA25M1[len(EMA25M1)-1]
 		UPUP := UPUP(closesM1, 6, 13, 5)
-
-		optionsM5 := map[string]string{
-			"aggregate":               config.FiveAggregate,
-			"limit":                   "200", // 只获取最新的几条数据即可
-			"token":                   "base",
-			"currency":                "usd",
-			"include_empty_intervals": "true",
-		}
-		closesM5, err := GetClosesByAPI(token.TokenItem, config, optionsM5)
-		if err != nil {
-			return
-		}
-		MA60M5 := CalculateMA(closesM5, 60)
-		EMA25M5 := CalculateEMA(closesM5, 25)
-		EMA25M5NOW := EMA25M5[len(EMA25M5)-1]
-
-		//MACD模型
-		var MACDM1, MACDM5 string
 		if price > EMA25M1NOW && price > MA60M1 && UPUP {
 			MACDM1 = "BUYMACD"
-		}
-		DIFUP := IsDIFUP(closesM5, 6, 13, 5)
-		if price > EMA25M5NOW && price > MA60M5 && DIFUP {
-			MACDM5 = "BUYMACD"
 		}
 
 		if MACDM15 == "BUYMACD" && MACDM5 == "BUYMACD" && MACDM1 == "BUYMACD" {

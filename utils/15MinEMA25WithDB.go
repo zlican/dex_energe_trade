@@ -55,6 +55,7 @@ func Update15minEMA25ToDB(db *sql.DB, symbol string, data *types.TokenData, conf
 	}
 	ema25 := CalculateEMA(closes, 25)
 	ema50 := CalculateEMA(closes, 50)
+	ma60 := CalculateMA(closes, 60)
 
 	currentPrice := closes[len(closes)-1]
 	lastEMA25 := ema25[len(ema25)-1]
@@ -64,7 +65,7 @@ func Update15minEMA25ToDB(db *sql.DB, symbol string, data *types.TokenData, conf
 	UPUP := UPUP(closes, 6, 13, 5)
 
 	var status string
-	if UPUP && currentPrice > lastEMA25 {
+	if currentPrice > lastEMA25 && currentPrice > ma60 && UPUP {
 		status = "BUYMACD"
 	} else {
 		status = "RANGE"
