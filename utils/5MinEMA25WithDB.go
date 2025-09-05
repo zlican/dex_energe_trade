@@ -11,7 +11,7 @@ import (
 	"onchain-energe-SRSI/types"
 )
 
-func Update5minEMA25ToDB(db *sql.DB, symbol string, data *types.TokenData, config *types.Config) (BUYMACD bool) {
+func Update5minEMA25ToDB(db *sql.DB, symbol string, data *types.TokenData, config *types.Config) (result bool) {
 
 	tokenItem := data.TokenItem
 
@@ -66,14 +66,17 @@ func Update5minEMA25ToDB(db *sql.DB, symbol string, data *types.TokenData, confi
 	lastEMA169 := ema169[len(ema169)-1]
 	lastTime := ohlcvData[len(ohlcvData)-1].Timestamp
 	lastKLine := 0.0
-	DIFUP := IsDIFUP(closes, 6, 13, 5)
-	golden := IsGolden(closes, 6, 13, 5)
+	DEAUP := IsDEAUP(closes, 6, 13, 5)
+
+	XSTRONG := XSTRONG(closes, 6, 13, 5)
 
 	var status string
-	if price > lastEMA25 && price > ma60 && DIFUP && golden {
+	status = "RANGE"
+	if price > lastEMA25 && price > ma60 && DEAUP {
 		status = "BUYMACD"
-	} else {
-		status = "RANGE"
+	}
+	if price > ma60 && XSTRONG {
+		status = "XBUYMID"
 	}
 
 	// 写入数据库（UPSERT）
@@ -94,7 +97,7 @@ func Update5minEMA25ToDB(db *sql.DB, symbol string, data *types.TokenData, confi
 		log.Printf("写入出错 %s: %v", symbol, err)
 	}
 
-	if status == "BUYMACD" {
+	if status == "BUYMACD" || status == "XBUYMID" {
 		return true
 	}
 	return false

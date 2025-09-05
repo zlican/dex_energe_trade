@@ -11,7 +11,7 @@ import (
 	"onchain-energe-SRSI/types"
 )
 
-func Update15minEMA25ToDB(db *sql.DB, symbol string, data *types.TokenData, config *types.Config) (BUYMACD bool) {
+func Update15minEMA25ToDB(db *sql.DB, symbol string, data *types.TokenData, config *types.Config) (result bool) {
 
 	tokenItem := data.TokenItem
 
@@ -62,10 +62,10 @@ func Update15minEMA25ToDB(db *sql.DB, symbol string, data *types.TokenData, conf
 	lastEMA50 := ema50[len(ema50)-1]
 	lastTime := ohlcvData[len(ohlcvData)-1].Timestamp
 	lastKLine := 0.0
-	UPUP := UPUP(closes, 6, 13, 5)
+	DEAUP := IsDEAUP(closes, 6, 13, 5)
 
 	var status string
-	if currentPrice > lastEMA25 && currentPrice > ma60 && UPUP {
+	if currentPrice > lastEMA25 && currentPrice > ma60 && DEAUP {
 		status = "BUYMACD"
 	} else {
 		status = "RANGE"

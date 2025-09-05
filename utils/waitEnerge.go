@@ -62,28 +62,7 @@ func executeWaitCheck(db *sql.DB, wait_sucess_token, chatID, waiting_token strin
 
 	for sym, token := range waitCopy {
 		var MACDM1, MACDM5 string
-
 		MACDM15 := Get15MStatusFromDB(db, sym)
-		optionsM5 := map[string]string{
-			"aggregate":               config.FiveAggregate,
-			"limit":                   "200", // 只获取最新的几条数据即可
-			"token":                   "base",
-			"currency":                "usd",
-			"include_empty_intervals": "true",
-		}
-		closesM5, err := GetClosesByAPI(token.TokenItem, config, optionsM5)
-		if err != nil {
-			continue
-		}
-		price := closesM5[len(closesM5)-1]
-		MA60M5 := CalculateMA(closesM5, 60)
-		EMA25M5 := CalculateEMA(closesM5, 25)
-		EMA25M5NOW := EMA25M5[len(EMA25M5)-1]
-		DIFUP := IsDIFUP(closesM5, 6, 13, 5)
-		goldenM5 := IsGolden(closesM5, 6, 13, 5)
-		if price > EMA25M5NOW && price > MA60M5 && DIFUP && goldenM5 {
-			MACDM5 = "BUYMACD"
-		}
 
 		optionsM1 := map[string]string{
 			"aggregate":               config.OneAggregate,
@@ -96,15 +75,37 @@ func executeWaitCheck(db *sql.DB, wait_sucess_token, chatID, waiting_token strin
 		if err != nil {
 			continue
 		}
+		price := closesM1[len(closesM1)-2]
 		MA60M1 := CalculateMA(closesM1, 60)
-		EMA25M1 := CalculateEMA(closesM1, 25)
-		EMA25M1NOW := EMA25M1[len(EMA25M1)-1]
-		UPUP := UPUP(closesM1, 6, 13, 5)
-		if price > EMA25M1NOW && price > MA60M1 && UPUP {
+		XSTRONGM1 := XSTRONG(closesM1, 6, 13, 5)
+		if price > MA60M1 && XSTRONGM1 {
 			MACDM1 = "BUYMACD"
 		}
 
-		if MACDM15 == "BUYMACD" && MACDM5 == "BUYMACD" && MACDM1 == "BUYMACD" {
+		optionsM5 := map[string]string{
+			"aggregate":               config.FiveAggregate,
+			"limit":                   "200", // 只获取最新的几条数据即可
+			"token":                   "base",
+			"currency":                "usd",
+			"include_empty_intervals": "true",
+		}
+		closesM5, err := GetClosesByAPI(token.TokenItem, config, optionsM5)
+		if err != nil {
+			continue
+		}
+
+		MA60M5 := CalculateMA(closesM5, 60)
+		EMA25M5 := CalculateEMA(closesM5, 25)
+		EMA25M5NOW := EMA25M5[len(EMA25M5)-1]
+		DEAUP := IsDEAUP(closesM5, 6, 13, 5)
+		if price > EMA25M5NOW && price > MA60M5 && DEAUP {
+			MACDM5 = "BUYMACD"
+		}
+		if XSTRONG(closesM5, 6, 13, 5) && price > MA60M5 {
+			MACDM5 = "XBUYMID"
+		}
+
+		if MACDM15 == "BUYMACD" && ((MACDM5 == "BUYMACD" && MACDM1 == "BUYMACD") || MACDM5 == "XBUYMID") {
 			if token.LastPushedOperation != "BUY" {
 				msg := fmt.Sprintf("%s%s\n📬 `%s`", token.TokenItem.Emoje, sym, token.TokenItem.Address)
 				telegram.SendMarkdownMessage(wait_sucess_token, chatID, msg)
@@ -115,7 +116,7 @@ func executeWaitCheck(db *sql.DB, wait_sucess_token, chatID, waiting_token strin
 				waitList[sym] = t
 				waitMu.Unlock()
 			}
-		} else if MACDM5 != "BUYMACD" {
+		} else if MACDM5 != "BUYMACD" && MACDM5 != "XBUYMID" {
 			waitMu.Lock()
 			// 如果之前推送过买入信号，而且还没发过“失效”消息
 			t := waitList[sym]

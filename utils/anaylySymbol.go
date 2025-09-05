@@ -15,7 +15,7 @@ func AnaylySymbol(data *types.TokenData, config *types.Config, resultsChan chan 
 	MACDM15 := Get15MStatusFromDB(model.DB, tokenItem.Symbol)
 	MACDM5 := Get5MStatusFromDB(model.DB, tokenItem.Symbol)
 	// ===== 模型1（优先级最高） =====
-	if MACDM15 == "BUYMACD" && MACDM5 == "BUYMACD" {
+	if MACDM15 == "BUYMACD" && (MACDM5 == "BUYMACD" || MACDM15 == "XBUYMID") {
 		tokenItem.Emoje = "🟢"
 		resultsChan <- tokenItem
 		return
