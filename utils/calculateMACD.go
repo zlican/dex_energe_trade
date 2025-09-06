@@ -138,7 +138,6 @@ func XSTRONG(closePrices []float64, fastPeriod, slowPeriod, signalPeriod int) bo
 
 	C := histogram[len(histogram)-3]
 	D := histogram[len(histogram)-2]
-	E := histogram[len(histogram)-1]
 
-	return E > 0 && E > D || E > 0 && D > 0 && D > C
+	return D > 0 && D > C
 }

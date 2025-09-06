@@ -62,10 +62,10 @@ func Update15minEMA25ToDB(db *sql.DB, symbol string, data *types.TokenData, conf
 	lastEMA50 := ema50[len(ema50)-1]
 	lastTime := ohlcvData[len(ohlcvData)-1].Timestamp
 	lastKLine := 0.0
-	DEAUP := IsDEAUP(closes, 6, 13, 5)
+	DIFUP := IsDIFUP(closes, 6, 13, 5)
 
 	var status string
-	if currentPrice > lastEMA25 && currentPrice > ma60 && DEAUP {
+	if currentPrice > lastEMA25 && currentPrice > ma60 && DIFUP {
 		status = "BUYMACD"
 	} else {
 		status = "RANGE"

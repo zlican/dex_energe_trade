@@ -84,8 +84,10 @@ func FetchRankData(fetchURL string, proxy string) ([]*types.TokenItem, error) {
 	// 转换成内部结构
 	var tokenList []*types.TokenItem
 	for _, at := range axiomTokens {
-		// 过滤条件：交易次数 > 50, 市值 > 500 SOL, 持币人数 > 1000, SOL流动性 > 100, TOP10 < 25
-		if at.TransactionCount < 50 || at.MarketCapSol < 500 || at.NumHolders < 1000 || at.LiquiditySol < 100 || at.Top10Holders > 25 {
+		// 市值 > 1000 SOL, 持币人数 > 1000, SOL流动性 > 250, TOP10 < 25
+		//硬性持续条件：持币前10小于25。 流动性大于5万U，市值大于20万U， 持币人数大于1000
+		// 老鼠仓、流动性危机、升降百分比严重、PVP严重
+		if at.MarketCapSol < 1000 || at.NumHolders < 1000 || at.LiquiditySol < 250 || at.Top10Holders > 25 {
 			continue
 		}
 

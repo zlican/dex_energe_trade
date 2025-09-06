@@ -97,8 +97,8 @@ func executeWaitCheck(db *sql.DB, wait_sucess_token, chatID, waiting_token strin
 		MA60M5 := CalculateMA(closesM5, 60)
 		EMA25M5 := CalculateEMA(closesM5, 25)
 		EMA25M5NOW := EMA25M5[len(EMA25M5)-1]
-		DEAUP := IsDEAUP(closesM5, 6, 13, 5)
-		if price > EMA25M5NOW && price > MA60M5 && DEAUP {
+		DIFUP := IsDIFUP(closesM5, 6, 13, 5)
+		if price > EMA25M5NOW && price > MA60M5 && DIFUP {
 			MACDM5 = "BUYMACD"
 		}
 		if XSTRONG(closesM5, 6, 13, 5) && price > MA60M5 {
@@ -143,7 +143,6 @@ func executeWaitCheck(db *sql.DB, wait_sucess_token, chatID, waiting_token strin
 		}
 
 		if now.Sub(token.AddedAt) > 3*time.Hour {
-			log.Printf("⏰ Wait超时清理 : %s", sym)
 			waitMu.Lock()
 			delete(waitList, sym)
 			waitMu.Unlock()
