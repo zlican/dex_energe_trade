@@ -3,7 +3,6 @@ package utils
 import (
 	"database/sql"
 	"fmt"
-	"log"
 	"onchain-energe-SRSI/telegram"
 	"onchain-energe-SRSI/types"
 	"strings"
@@ -41,7 +40,6 @@ func sendWaitListBroadcast(now time.Time, waiting_token, chatID string) {
 		msgBuilder.WriteString(fmt.Sprintf("%s %-12s\n📬 `%s`\n", emoje, token.Symbol, token.TokenItem.Address))
 	}
 	msg := msgBuilder.String()
-	log.Printf("📤 推送等待区更新列表，共 %d 个代币", len(waitList))
 	telegram.SendMarkdownMessageWaiting(waiting_token, chatID, msg)
 }
 
@@ -205,7 +203,6 @@ func addToWaitList(coin types.TokenItem, waiting_token, chatID string) {
 			TokenItem: coin,
 			AddedAt:   now,
 		}
-		log.Printf("✅ 添加或替换等待代币: %s", coin.Symbol)
 		newAdded = true
 	}
 	waitMu.Unlock()

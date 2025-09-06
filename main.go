@@ -77,13 +77,10 @@ func main() {
 		nextAligned := now.Truncate(time.Minute).Add(time.Duration(minutesToNext) * time.Minute)
 		delay := time.Until(nextAligned)
 
-		fmt.Printf("[runScan] 下一次对齐执行时间: %s（等待 %v）\n", nextAligned.Format("15:04:05"), delay)
-
 		// ✅ 启动延迟后触发 runScan，然后定期执行
 		go func() {
 			time.Sleep(delay)
 
-			fmt.Printf("[runScan] 对齐执行: %s\n", time.Now().Format("15:04:05"))
 			runScan(resultsChan)
 
 			ticker := time.NewTicker(5 * time.Minute)
@@ -94,8 +91,6 @@ func main() {
 		}()
 	}()
 
-	// ✅ 优雅退出
-	fmt.Println("系统运行中，按 Ctrl+C 退出...")
 	done := make(chan os.Signal, 1)
 	signal.Notify(done, syscall.SIGINT, syscall.SIGTERM)
 	<-done
@@ -139,7 +134,6 @@ func runScan(resultsChan chan types.TokenItem) {
 
 	for _, token := range tokenList {
 		symbol := token.Symbol
-		fmt.Println(symbol)
 
 		// 确保 tokenDataMap 里有对应结构（初始化一次）
 		tokenDataMutex.Lock()
@@ -176,7 +170,6 @@ func runScan(resultsChan chan types.TokenItem) {
 			}
 			utils.AnaylySymbol(data, config, resultsChan)
 
-			fmt.Printf("分析成功: %s\n", symbol)
 		}(symbol, data)
 	}
 
