@@ -164,6 +164,8 @@ func executeWaitCheck(db *sql.DB, wait_sucess_token, chatID, waiting_token strin
 			fmt.Printf("计算 %s (5m) EMA25 失败: 空数组\n", sym)
 			continue
 		}
+		pricePre := closesM5[len(closesM5)-2]
+		PricePre2 := closesM5[len(closesM5)-3]
 		EMA25M5NOW := EMA25M5[len(EMA25M5)-1]
 		DIFUP := IsDIFUP(closesM5, 6, 13, 5)
 		MACDM5 = "RANGE"
@@ -174,7 +176,7 @@ func executeWaitCheck(db *sql.DB, wait_sucess_token, chatID, waiting_token strin
 			MACDM5 = "XBUY"
 		}
 		mid = false
-		if price > MA60M5 && DIFUP {
+		if pricePre > EMA25M5NOW || PricePre2 > EMA25M5NOW {
 			mid = true
 		}
 
