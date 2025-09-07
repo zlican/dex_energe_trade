@@ -20,6 +20,7 @@ type TokenItem struct {
 	Website            string  `json:"website"`
 	SmartDegenCount    int     `json:"smart_degen_count"`
 	RenownedCount      int     `json:"renowned_count"`
+	BuyCount           int     `json:buy_count`
 	PoolAddress        string  // 将在初始化时填充
 	Emoje              string
 }

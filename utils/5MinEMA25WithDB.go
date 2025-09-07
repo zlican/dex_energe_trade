@@ -68,15 +68,10 @@ func Update5minEMA25ToDB(db *sql.DB, symbol string, data *types.TokenData, confi
 	lastKLine := 0.0
 	DIFUP := IsDIFUP(closes, 6, 13, 5)
 
-	XSTRONG := XSTRONG(closes, 6, 13, 5)
-
 	var status string
 	status = "RANGE"
-	if price > lastEMA25 && price > ma60 && DIFUP {
-		status = "BUYMACD"
-	}
-	if price > ma60 && XSTRONG {
-		status = "XBUYMID"
+	if price > ma60 && DIFUP {
+		status = "UP"
 	}
 
 	// 写入数据库（UPSERT）
@@ -97,7 +92,7 @@ func Update5minEMA25ToDB(db *sql.DB, symbol string, data *types.TokenData, confi
 		log.Printf("写入出错 %s: %v", symbol, err)
 	}
 
-	if status == "BUYMACD" || status == "XBUYMID" {
+	if status == "UP" {
 		return true
 	}
 	return false

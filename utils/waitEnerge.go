@@ -23,9 +23,6 @@ var waitList = make(map[string]waitToken)
 
 // sendWaitListBroadcast 用于主动推送等待区列表
 func sendWaitListBroadcast(now time.Time, waiting_token, chatID string) {
-	waitMu.Lock()
-	defer waitMu.Unlock()
-
 	if len(waitList) == 0 {
 		// 错误注释：Telegram 发送失败依赖其内置指数退避重试机制
 		telegram.SendMarkdownMessageWaiting(waiting_token, chatID, "等待区为空")
@@ -44,9 +41,9 @@ func sendWaitListBroadcast(now time.Time, waiting_token, chatID string) {
 
 // handleOperation 处理买入信号逻辑
 // 返回值：bool 表示是否从 waitList 删除代币
-func handleOperation(sym string, token waitToken, MACDM1, MACDM5, MACDM15, wait_sucess_token, chatID string) bool {
+func handleOperation(sym string, token waitToken, mid bool, MACDM1, MACDM5, MACDM15, wait_sucess_token, chatID string) bool {
 	// 条件 1：信号有效，发送买入信号
-	if MACDM15 == "BUYMACD" && ((MACDM5 == "BUYMACD" && MACDM1 == "BUYMACD") || MACDM5 == "XBUYMID") {
+	if MACDM15 == "BUYMACD" && ((MACDM5 == "BUYMACD" && MACDM1 == "XBUY") || MACDM5 == "XBUY") {
 		if token.LastPushedOperation != "BUY" {
 			msg := fmt.Sprintf("%s%s\n📬 `%s`", token.TokenItem.Emoje, sym, token.TokenItem.Address)
 			// 错误注释：Telegram 发送失败依赖其内置重试机制，失败后跳过状态更新
@@ -61,9 +58,8 @@ func handleOperation(sym string, token waitToken, MACDM1, MACDM5, MACDM15, wait_
 		}
 		return false
 	}
-
 	// 条件 2：5分钟信号失效，从 waitList 删除
-	if MACDM5 != "BUYMACD" && MACDM5 != "XBUYMID" {
+	if !mid {
 		t := waitList[sym]
 		if t.LastPushedOperation == "BUY" && !t.LastInvalidPushed {
 			msg := fmt.Sprintf("⚠️信号失效：%s", sym)
@@ -121,6 +117,7 @@ func executeWaitCheck(db *sql.DB, wait_sucess_token, chatID, waiting_token strin
 
 	for sym, token := range waitCopy {
 		var MACDM1, MACDM5 string
+		var mid bool
 		// 错误注释：Get15MStatusFromDB 可能因数据库连接失败返回空值，需检查
 		MACDM15 := Get15MStatusFromDB(db, sym)
 
@@ -141,8 +138,9 @@ func executeWaitCheck(db *sql.DB, wait_sucess_token, chatID, waiting_token strin
 		price := closesM1[len(closesM1)-2]
 		MA60M1 := CalculateMA(closesM1, 60)
 		XSTRONGM1 := XSTRONG(closesM1, 6, 13, 5)
-		if price > MA60M1 && XSTRONGM1 {
-			MACDM1 = "BUYMACD"
+		DIFM1 := IsDIFUP(closesM1, 6, 13, 5)
+		if price > MA60M1 && XSTRONGM1 && DIFM1 {
+			MACDM1 = "XBUY"
 		}
 
 		// 获取 5 分钟 K 线数据
@@ -168,15 +166,20 @@ func executeWaitCheck(db *sql.DB, wait_sucess_token, chatID, waiting_token strin
 		}
 		EMA25M5NOW := EMA25M5[len(EMA25M5)-1]
 		DIFUP := IsDIFUP(closesM5, 6, 13, 5)
+		MACDM5 = "RANGE"
 		if price > EMA25M5NOW && price > MA60M5 && DIFUP {
 			MACDM5 = "BUYMACD"
 		}
-		if XSTRONG(closesM5, 6, 13, 5) && price > MA60M5 {
-			MACDM5 = "XBUYMID"
+		if XSTRONG(closesM5, 6, 13, 5) && price > MA60M5 && DIFUP {
+			MACDM5 = "XBUY"
+		}
+		mid = false
+		if price > MA60M5 && DIFUP {
+			mid = true
 		}
 
 		// 处理买入信号逻辑
-		if handleOperation(sym, token, MACDM1, MACDM5, MACDM15, wait_sucess_token, chatID) {
+		if handleOperation(sym, token, mid, MACDM1, MACDM5, MACDM15, wait_sucess_token, chatID) {
 			changed = true
 		}
 
@@ -252,10 +255,8 @@ func addToWaitList(coin types.TokenItem, waiting_token, chatID string) {
 		}
 		newAdded = true
 	}
-	waitMu.Unlock()
-
 	if newAdded && waiting_token != "" {
-		// 错误注释：Telegram 发送失败依赖其内置重试机制
 		sendWaitListBroadcast(now, waiting_token, chatID)
 	}
+	waitMu.Unlock()
 }
