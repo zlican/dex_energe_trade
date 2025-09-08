@@ -43,7 +43,7 @@ func sendWaitListBroadcast(now time.Time, waiting_token, chatID string) {
 // 返回值：bool 表示是否从 waitList 删除代币
 func handleOperation(sym string, token waitToken, mid bool, MACDM1, MACDM5, MACDM15, wait_sucess_token, chatID string) bool {
 	// 条件 1：信号有效，发送买入信号
-	if MACDM15 == "BUYMACD" && ((MACDM5 == "BUYMACD" && MACDM1 == "XBUY") || MACDM5 == "XBUY") {
+	if MACDM15 == "BUYMACD" && MACDM5 == "BUYMACD" && MACDM1 == "XBUY" {
 		if token.LastPushedOperation != "BUY" {
 			msg := fmt.Sprintf("%s%s\n📬 `%s`", token.TokenItem.Emoje, sym, token.TokenItem.Address)
 			// 错误注释：Telegram 发送失败依赖其内置重试机制，失败后跳过状态更新
@@ -171,9 +171,6 @@ func executeWaitCheck(db *sql.DB, wait_sucess_token, chatID, waiting_token strin
 		MACDM5 = "RANGE"
 		if price > EMA25M5NOW && price > MA60M5 && DIFUP {
 			MACDM5 = "BUYMACD"
-		}
-		if XSTRONG(closesM5, 6, 13, 5) && price > MA60M5 && DIFUP {
-			MACDM5 = "XBUY"
 		}
 		mid = false
 		if pricePre > EMA25M5NOW || PricePre2 > EMA25M5NOW {
