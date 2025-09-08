@@ -158,7 +158,7 @@ func executeWaitCheck(db *sql.DB, wait_sucess_token, chatID, waiting_token strin
 			continue
 		}
 		MA60M5 := CalculateMA(closesM5, 60)
-		EMA25M5 := CalculateEMA(closesM5, 25)
+		EMA25M5, _ := CalculateEMA(closesM5, 25)
 		if len(EMA25M5) == 0 {
 			// 错误注释：EMA 计算失败（可能因数据不足），跳过以避免 panic
 			fmt.Printf("计算 %s (5m) EMA25 失败: 空数组\n", sym)

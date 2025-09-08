@@ -9,8 +9,8 @@ func CalculateMACD(closePrices []float64, fastPeriod, slowPeriod, signalPeriod i
 	}
 
 	// 这里用改进版 EMA（不足周期时用现有均值）
-	emaFast := CalculateEMA(closePrices, fastPeriod)
-	emaSlow := CalculateEMA(closePrices, slowPeriod)
+	emaFast, _ := CalculateEMA(closePrices, fastPeriod)
+	emaSlow, _ := CalculateEMA(closePrices, slowPeriod)
 
 	macdLine = make([]float64, n)   // DIF
 	signalLine = make([]float64, n) // DEA
@@ -22,7 +22,7 @@ func CalculateMACD(closePrices []float64, fastPeriod, slowPeriod, signalPeriod i
 	}
 
 	// DEA = EMA(DIF, signalPeriod)（不足周期时同样用现有均值）
-	signalLine = CalculateEMA(macdLine, signalPeriod)
+	signalLine, _ = CalculateEMA(macdLine, signalPeriod)
 
 	// MACD柱 = (DIF - DEA) * scale
 	for i := 0; i < n; i++ {

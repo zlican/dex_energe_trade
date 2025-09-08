@@ -55,9 +55,9 @@ func Update5minEMA25ToDB(db *sql.DB, symbol string, data *types.TokenData, confi
 	}
 	pricePre := closes[len(closes)-2]
 	pricePre2 := closes[len(closes)-3]
-	ema25 := CalculateEMA(closes, 25)
-	ema50 := CalculateEMA(closes, 50)
-	ema169 := CalculateEMA(closes, 169)
+	ema25, _ := CalculateEMA(closes, 25)
+	ema50, _ := CalculateEMA(closes, 50)
+	ema169, _ := CalculateEMA(closes, 169)
 	UpMACD := false
 	XUpMACD := IsGolden(closes, 6, 13, 5)
 
