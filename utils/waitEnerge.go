@@ -157,7 +157,6 @@ func executeWaitCheck(db *sql.DB, wait_sucess_token, chatID, waiting_token strin
 			fmt.Printf("获取 %s (5m) 数据失败或为空: %v\n", sym, err)
 			continue
 		}
-		MA60M5 := CalculateMA(closesM5, 60)
 		EMA25M5, _ := CalculateEMA(closesM5, 25)
 		if len(EMA25M5) == 0 {
 			// 错误注释：EMA 计算失败（可能因数据不足），跳过以避免 panic
@@ -169,7 +168,7 @@ func executeWaitCheck(db *sql.DB, wait_sucess_token, chatID, waiting_token strin
 		EMA25M5NOW := EMA25M5[len(EMA25M5)-1]
 		DIFUP := IsDIFUP(closesM5, 6, 13, 5)
 		MACDM5 = "RANGE"
-		if price > EMA25M5NOW && price > MA60M5 && DIFUP {
+		if price > EMA25M5NOW && DIFUP {
 			MACDM5 = "BUYMACD"
 		}
 		mid = false
