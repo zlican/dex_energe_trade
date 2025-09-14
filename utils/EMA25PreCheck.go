@@ -86,11 +86,11 @@ func EMA25PreCheck(symbol string, data *types.TokenData, config *types.Config) (
 		}
 		_, EMA25H1 := CalculateEMA(closesH1, 25)
 		DIFH1 := IsDIFUP(closesH1, 6, 13, 5)
-		if priceBIG < EMA25H1 || !DIFH1 { //1H : EMA25 + DIF
-			return false
+		if priceBIG > EMA25H1 && DIFH1 { //1H : EMA25 + DIF
+			return true
 		}
 	} else {
 		return false
 	}
-	return true
+	return false
 }

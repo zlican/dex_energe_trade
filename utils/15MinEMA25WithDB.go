@@ -54,13 +54,10 @@ func Update15minEMA25ToDB(db *sql.DB, symbol string, data *types.TokenData, conf
 		closes = append(closes, k.Close)
 	}
 	ema25, _ := CalculateEMA(closes, 25)
-	ema50, _ := CalculateEMA(closes, 50)
 
 	currentPrice := closes[len(closes)-1]
 	lastEMA25 := ema25[len(ema25)-1]
-	lastEMA50 := ema50[len(ema50)-1]
 	lastTime := ohlcvData[len(ohlcvData)-1].Timestamp
-	lastKLine := 0.0
 	golden := IsGolden(closes, 6, 13, 5)
 
 	var status string
@@ -72,53 +69,18 @@ func Update15minEMA25ToDB(db *sql.DB, symbol string, data *types.TokenData, conf
 
 	// 写入数据库（UPSERT）
 	_, err = model.DB.Exec(`
-		INSERT INTO symbol_ema_15min (symbol, timestamp, ema25, ema50, srsi, status, price_gt_ema25)
-		VALUES (?, ?, ?, ?, ?, ?, ?)
+		INSERT INTO symbol_ema_15min (symbol, timestamp, status)
+		VALUES (?, ?, ?)
 		ON DUPLICATE KEY UPDATE
 		timestamp = VALUES(timestamp),
-		ema25 = VALUES(ema25),
-		ema50 = VALUES(ema50),
-		srsi = VALUES(srsi),
-		status = VALUES(status),
-		price_gt_ema25 = VALUES(price_gt_ema25)
-	`, symbol, lastTime, lastEMA25, lastEMA50, lastKLine, status, currentPrice > lastEMA25)
+		status = VALUES(status)
+	`, symbol, lastTime, status)
 	if err != nil {
 		log.Printf("写入出错 %s: %v", symbol, err)
 	}
 
-	if status == "BUYMACD" {
-		return true
-	}
-	return false
+	return status == "BUYMACD"
 
-}
-
-func Get15MEMAFromDB(db *sql.DB, symbol string) (ema25, ema50 float64) {
-	err := db.QueryRow("SELECT ema25, ema50 FROM symbol_ema_15min WHERE symbol = ?", symbol).Scan(&ema25, &ema50)
-	if err != nil {
-		log.Printf("查询 15MEMA 失败 %s: %v", symbol, err)
-		return 0, 0
-	}
-	return ema25, ema50
-}
-
-func GetPriceGT_EMA25FromDB(db *sql.DB, symbol string) bool {
-	var priceGT_EMA25 bool
-	err := db.QueryRow("SELECT price_gt_ema25 FROM symbol_ema_15min WHERE symbol = ?", symbol).Scan(&priceGT_EMA25)
-	if err != nil {
-		log.Printf("查询 PriceGT_EMA25 失败 %s: %v", symbol, err)
-		return false
-	}
-	return priceGT_EMA25
-}
-
-func Get15MSRSIFromDB(db *sql.DB, symbol string) (srsi float64) {
-	err := db.QueryRow("SELECT srsi FROM symbol_ema_15min WHERE symbol = ?", symbol).Scan(&srsi)
-	if err != nil {
-		log.Printf("查询 1HSRSIFromDB 失败 %s: %v", symbol, err)
-		return 0
-	}
-	return srsi
 }
 
 func Get15MStatusFromDB(db *sql.DB, symbol string) (status string) {

@@ -158,23 +158,7 @@ func runScan(resultsChan chan types.TokenItem) {
 			defer wg.Done()
 			sem <- struct{}{}
 			defer func() { <-sem }()
-
-			PreCheck := utils.EMA25PreCheck(symbol, data, config)
-			if !PreCheck {
-				return
-			}
-
-			MACDM15 := utils.Update15minEMA25ToDB(model.DB, symbol, data, config)
-			if !MACDM15 {
-				return
-			}
-
-			MACDM5 := utils.Update5minEMA25ToDB(model.DB, symbol, data, config)
-			if !MACDM5 {
-				return
-			}
 			utils.AnaylySymbol(data, config, resultsChan)
-
 		}(symbol, data)
 	}
 
