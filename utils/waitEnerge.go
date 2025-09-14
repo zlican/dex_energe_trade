@@ -136,10 +136,11 @@ func executeWaitCheck(db *sql.DB, wait_sucess_token, chatID, waiting_token strin
 			continue
 		}
 		price := closesM1[len(closesM1)-2]
+		_, EMA25M1 := CalculateEMA(closesM1, 25)
 		MA60M1 := CalculateMA(closesM1, 60)
-		XSTRONGM1 := XSTRONG(closesM1, 6, 13, 5)
+		XSTRONGM1 := XSTRONGUP(closesM1, 6, 13, 5)
 		DIFM1 := IsDIFUP(closesM1, 6, 13, 5)
-		if price > MA60M1 && XSTRONGM1 && DIFM1 {
+		if price > EMA25M1 && price > MA60M1 && XSTRONGM1 && DIFM1 { //1m : EMA25 + MA60 + DIF + XSTRONG
 			MACDM1 = "XBUY"
 		}
 
@@ -157,7 +158,7 @@ func executeWaitCheck(db *sql.DB, wait_sucess_token, chatID, waiting_token strin
 			fmt.Printf("获取 %s (5m) 数据失败或为空: %v\n", sym, err)
 			continue
 		}
-		EMA25M5, _ := CalculateEMA(closesM5, 25)
+		EMA25M5, EMA25M5NOW := CalculateEMA(closesM5, 25)
 		if len(EMA25M5) == 0 {
 			// 错误注释：EMA 计算失败（可能因数据不足），跳过以避免 panic
 			fmt.Printf("计算 %s (5m) EMA25 失败: 空数组\n", sym)
@@ -165,10 +166,9 @@ func executeWaitCheck(db *sql.DB, wait_sucess_token, chatID, waiting_token strin
 		}
 		pricePre := closesM5[len(closesM5)-2]
 		PricePre2 := closesM5[len(closesM5)-3]
-		EMA25M5NOW := EMA25M5[len(EMA25M5)-1]
-		DIFUP := IsDIFUP(closesM5, 6, 13, 5)
+		MA60M5 := CalculateMA(closesM5, 60)
 		MACDM5 = "RANGE"
-		if price > EMA25M5NOW && DIFUP {
+		if price > EMA25M5NOW && price > MA60M5 { //5M : EMA25 + MA60
 			MACDM5 = "BUYMACD"
 		}
 		mid = false
@@ -181,8 +181,8 @@ func executeWaitCheck(db *sql.DB, wait_sucess_token, chatID, waiting_token strin
 			changed = true
 		}
 
-		// 检查是否超时（3小时）
-		if now.Sub(token.AddedAt) > 3*time.Hour {
+		// 检查是否超时（8小时）
+		if now.Sub(token.AddedAt) > 8*time.Hour {
 			// 错误注释：超时删除代币，未通知用户，可能需添加 Telegram 通知
 			delete(waitList, sym)
 			changed = true

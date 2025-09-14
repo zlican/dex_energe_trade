@@ -49,8 +49,8 @@ func EMA25PreCheck(symbol string, data *types.TokenData, config *types.Config) (
 	}
 	priceBIG := closesH4[len(closesH4)-1]
 	_, EMA25H4 := CalculateEMA(closesH4, 25)
-	DIFH4 := IsDIFUP(closesH4, 6, 13, 5)
-	if priceBIG > EMA25H4 && DIFH4 {
+	goldenUP := IsGoldenUP(closesH4, 6, 13, 5)
+	if priceBIG > EMA25H4 && goldenUP { //4H : EMA25 + 绿柱UP
 		// 构建查询参数
 		optionsH1 := map[string]string{
 			"aggregate":               "1",
@@ -86,7 +86,7 @@ func EMA25PreCheck(symbol string, data *types.TokenData, config *types.Config) (
 		}
 		_, EMA25H1 := CalculateEMA(closesH1, 25)
 		DIFH1 := IsDIFUP(closesH1, 6, 13, 5)
-		if priceBIG < EMA25H1 || !DIFH1 {
+		if priceBIG < EMA25H1 || !DIFH1 { //1H : EMA25 + DIF
 			return false
 		}
 	} else {
