@@ -68,7 +68,7 @@ func sendMinuteMonitorBroadcast(token waitToken, wait_sucess_token, chatID strin
 
 // handleOperation 处理买入信号逻辑
 // 返回值：bool 表示是否从 waitList 删除代币
-func handleOperation(sym string, token waitToken, mid bool, MACDM5, MACDM15, wait_sucess_token, chatID string) bool {
+func handleOperation(sym string, token waitToken, MACDM5, MACDM15, wait_sucess_token, chatID string) bool {
 	// 条件 1：信号有效，发送买入信号
 	if MACDM15 == "BUYMACD" && MACDM5 == "BUYMACD" {
 		// Add to 1-minute monitoring pipeline
@@ -83,7 +83,7 @@ func handleOperation(sym string, token waitToken, mid bool, MACDM5, MACDM15, wai
 		return false
 	}
 	// 条件 2：15分钟信号失效，从 waitList 删除
-	if !mid {
+	if MACDM15 != "BUYMACD" {
 		t := waitList[sym]
 		if !t.LastInvalidPushed {
 			msg := fmt.Sprintf("⚠️信号失效：%s", sym)
@@ -262,7 +262,6 @@ func executeWaitCheck(db *sql.DB, wait_sucess_token, chatID, waiting_token strin
 
 	for sym, token := range waitCopy {
 		var MACDM5, MACDM15 string
-		var mid bool
 
 		// 获取 15 分钟 K 线数据
 		optionsM15 := map[string]string{
@@ -279,8 +278,6 @@ func executeWaitCheck(db *sql.DB, wait_sucess_token, chatID, waiting_token strin
 			continue
 		}
 		price := closesM15[len(closesM15)-1]
-		pricePre := closesM15[len(closesM15)-2]
-		pricePre2 := closesM15[len(closesM15)-3]
 		isGolden := IsGolden(closesM15, 6, 13, 5)
 		ema25M15, ema25M15now := CalculateEMA(closesM15, 25)
 		if len(ema25M15) == 0 {
@@ -290,10 +287,6 @@ func executeWaitCheck(db *sql.DB, wait_sucess_token, chatID, waiting_token strin
 		MACDM15 = "RANGE"
 		if price > ema25M15now && isGolden {
 			MACDM15 = "BUYMACD"
-		}
-		mid = false
-		if pricePre > ema25M15now || pricePre2 > ema25M15now {
-			mid = true
 		}
 
 		// 获取 5 分钟 K 线数据
@@ -319,7 +312,7 @@ func executeWaitCheck(db *sql.DB, wait_sucess_token, chatID, waiting_token strin
 		}
 
 		// 处理买入信号逻辑
-		if handleOperation(sym, token, mid, MACDM5, MACDM15, wait_sucess_token, chatID) {
+		if handleOperation(sym, token, MACDM5, MACDM15, wait_sucess_token, chatID) {
 			changed = true
 		}
 

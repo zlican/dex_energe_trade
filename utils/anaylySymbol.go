@@ -57,11 +57,11 @@ func AnaylySymbol(data *types.TokenData, config *types.Config, resultsChan chan 
 	for _, k := range ohlcvData {
 		closesM15 = append(closesM15, k.Close)
 	}
-	pricePre := closesM15[len(closesM15)-2]
-	pricePre2 := closesM15[len(closesM15)-3]
+	price := closesM15[len(closesM15)-1]
 	_, EMA25M15NOW := CalculateEMA(closesM15, 25)
+	golden := IsGolden(closesM15, 6, 13, 5)
 
-	if pricePre > EMA25M15NOW || pricePre2 > EMA25M15NOW {
+	if price > EMA25M15NOW && golden {
 		tokenItem.Emoje = "🟢"
 		resultsChan <- tokenItem
 		return

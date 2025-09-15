@@ -85,8 +85,8 @@ func FetchRankData(fetchURL string, proxy string) ([]*types.TokenItem, error) {
 	// 转换成内部结构
 	var tokenList []*types.TokenItem
 	for _, at := range axiomTokens {
-		// 市值 > 1000 SOL, 持币人数 > 1000, SOL流动性 > 250, TOP10 < 25, BUYCOUNT > 10
-		if at.MarketCapSol < 1000 || at.NumHolders < 1000 || at.LiquiditySol < 250 || at.Top10Holders > 25 || at.BuyCount < 10 {
+		// 市值 > 1000 SOL, 持币人数 > 1000, SOL流动性 > 250, TOP10 < 25, BUYCOUNT > 20
+		if at.MarketCapSol < 1000 || at.NumHolders < 1000 || at.LiquiditySol < 250 || at.Top10Holders > 25 || at.BuyCount < 20 {
 			continue
 		}
 
