@@ -160,16 +160,14 @@ func executeMinuteMonitorCheck(wait_sucess_token, chatID string, now time.Time) 
 		ma60M1 := CalculateMA(closesM1, 60)
 		XSTRONGUPM1 := XSTRONGUP(closesM1, 6, 13, 5)
 		XSTRONGDOWNM1 := XSTRONGDOWN(closesM1, 6, 13, 5)
-		DIFUPM1 := IsDIFUP(closesM1, 6, 13, 5)
-		DIFDOWNM1 := IsDIFDOWN(closesM1, 6, 13, 5)
 
 		validX := "XBUY"
 		validMACD := "BUYMACD"
 
 		MACDM1 := ""
-		if price1 > ma60M1 && XSTRONGUPM1 && DIFUPM1 {
+		if price1 > ma60M1 && XSTRONGUPM1 {
 			MACDM1 = "XBUY"
-		} else if price1 < ma60M1 && XSTRONGDOWNM1 && DIFDOWNM1 {
+		} else if price1 < ma60M1 && XSTRONGDOWNM1 {
 			MACDM1 = "XSELL"
 		}
 
