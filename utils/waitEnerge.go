@@ -187,13 +187,11 @@ func executeMinuteMonitorCheck(wait_sucess_token, chatID string, now time.Time) 
 		}
 		price := closesM15[len(closesM15)-1]
 		isGolden := IsGolden(closesM15, 6, 13, 5)
-		isDead := IsDead(closesM15, 6, 13, 5)
 		_, ema25M15now := CalculateEMA(closesM15, 25)
+		DIFM15UP := IsDIFUP(closesM15, 6, 13, 5)
 		MACDM15 := "RANGE"
-		if price > ema25M15now && isGolden {
+		if price > ema25M15now && isGolden && DIFM15UP {
 			MACDM15 = "BUYMACD"
-		} else if price < ema25M15now && isDead {
-			MACDM15 = "SELLMACD"
 		}
 
 		// 触发
@@ -278,12 +276,13 @@ func executeWaitCheck(db *sql.DB, wait_sucess_token, chatID, waiting_token strin
 		price := closesM15[len(closesM15)-1]
 		isGolden := IsGolden(closesM15, 6, 13, 5)
 		ema25M15, ema25M15now := CalculateEMA(closesM15, 25)
+		DIFM15UP := IsDIFUP(closesM15, 6, 13, 5)
 		if len(ema25M15) == 0 {
 			progressLogger.Printf("计算 %s (15m) EMA25 失败: 空数组\n", sym)
 			continue
 		}
 		MACDM15 = "RANGE"
-		if price > ema25M15now && isGolden {
+		if price > ema25M15now && isGolden && DIFM15UP {
 			MACDM15 = "BUYMACD"
 		}
 
