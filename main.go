@@ -7,7 +7,6 @@ import (
 	"log"
 	"net/http"
 	"onchain-energe-SRSI/geckoterminal"
-	"onchain-energe-SRSI/model"
 	"onchain-energe-SRSI/telegram"
 	"onchain-energe-SRSI/types"
 	"onchain-energe-SRSI/utils"
@@ -16,6 +15,7 @@ import (
 	"strconv"
 	"strings"
 	"sync"
+	"sync/atomic"
 	"syscall"
 	"time"
 )
@@ -25,16 +25,13 @@ var (
 	config         *types.Config
 	tokenDataMap   = make(map[string]*types.TokenData)
 	tokenDataMutex sync.Mutex // 用于保护 tokenDataMap
-)
-
-var (
-	onchain_waiting_bot_token = "8389283907:AAFLshQSgAaiGKSISTg1N59DAgLp1OLs158"
+	progressLogger = log.New(os.Stdout, "[Screener] ", log.LstdFlags)
+	runScanRunning int32
 )
 
 func main() {
 	mux := http.NewServeMux()
 	mux.HandleFunc("/api/latest-tg-messages", latestMessagesHandler)
-	mux.HandleFunc("/api/latest-tg-messages-waiting", latestMessagesWaitingHandler)
 
 	go func() {
 		if err := http.ListenAndServe(":8889", corsMiddleware(mux)); err != nil {
@@ -42,7 +39,6 @@ func main() {
 		}
 	}()
 
-	model.InitDB()
 	configFilePtr := flag.String("config", "config.json", "配置文件路径")
 	flag.Parse()
 
@@ -53,42 +49,34 @@ func main() {
 		os.Exit(1)
 	}
 	resultsChan := make(chan types.TokenItem, 100)
-	// 启动等待区监控协程
-	go utils.WaitEnerge(
-		resultsChan,
-		model.DB,
-		config.BotToken, // 成功触发推送的 bot
-		config.ChatID,
-		onchain_waiting_bot_token, // 等待区列表推送的 bot
-		config,
-	)
 
 	go func() {
 		// ✅ 首次立即执行
 		fmt.Printf("[runScan] 首次立即执行: %s\n", time.Now().Format("15:04:05"))
 		runScan(resultsChan)
 
-		// ✅ 计算下一次 minute%5==0 的对齐时间
+		// 计算下一次对齐时间
 		now := time.Now()
-		minutesToNext := 5 - (now.Minute() % 5)
-		if minutesToNext == 0 {
-			minutesToNext = 5
-		}
-		nextAligned := now.Truncate(time.Minute).Add(time.Duration(minutesToNext) * time.Minute)
+		nextAligned := now.Truncate(time.Minute).Add(time.Minute)
 		delay := time.Until(nextAligned)
+		time.Sleep(delay)
 
-		// ✅ 启动延迟后触发 runScan，然后定期执行
-		go func() {
-			time.Sleep(delay)
+		ticker := time.NewTicker(1 * time.Minute)
+		defer ticker.Stop()
+		for t := range ticker.C {
+			progressLogger.Printf("[runScan] 每1分钟触发: %s", t.Format("15:04:05"))
 
-			runScan(resultsChan)
-
-			ticker := time.NewTicker(5 * time.Minute)
-			for t := range ticker.C {
-				fmt.Printf("[runScan] 周期触发: %s\n", t.Format("15:04:05"))
-				runScan(resultsChan)
+			// 如果上一次还在跑，则跳过本次（非阻塞）
+			if !atomic.CompareAndSwapInt32(&runScanRunning, 0, 1) {
+				progressLogger.Println("上一次 runScan 未结束，跳过本次执行")
+				continue
 			}
-		}()
+			// 异步执行 runScanOnce，结束时清理标记
+			go func(execTime time.Time) {
+				defer atomic.StoreInt32(&runScanRunning, 0)
+				runScan(resultsChan)
+			}(t)
+		}
 	}()
 
 	done := make(chan os.Signal, 1)
@@ -98,6 +86,8 @@ func main() {
 }
 
 func runScan(resultsChan chan types.TokenItem) {
+	//7秒获K
+	time.Sleep(7 * time.Second)
 	fmt.Println("开始执行 runScan...")
 
 	var (
@@ -158,7 +148,7 @@ func runScan(resultsChan chan types.TokenItem) {
 			defer wg.Done()
 			sem <- struct{}{}
 			defer func() { <-sem }()
-			utils.AnaylySymbol(data, config, resultsChan)
+			utils.AnaylySymbol(data, config, resultsChan, config.BotToken, config.ChatID)
 		}(symbol, data)
 	}
 
@@ -175,19 +165,6 @@ func latestMessagesHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	msgs := telegram.GetLatestMessages(limit)
-	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(msgs)
-}
-func latestMessagesWaitingHandler(w http.ResponseWriter, r *http.Request) {
-	// 参数limit，默认1
-	limit := 2
-	if l := r.URL.Query().Get("limit"); l != "" {
-		if v, err := strconv.Atoi(l); err == nil && v > 0 {
-			limit = v
-		}
-	}
-
-	msgs := telegram.GetLatestMessagesWaiting(limit)
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(msgs)
 }

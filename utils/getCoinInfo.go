@@ -105,6 +105,7 @@ func FetchRankData(fetchURL string, proxy string) ([]*types.TokenItem, error) {
 			PoolAddress:     at.PairAddress,
 			Website:         at.Website,
 			TwitterUsername: at.Twitter,
+			Emoje:           "🟢",
 		}
 		tokenList = append(tokenList, item)
 	}
