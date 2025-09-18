@@ -2,13 +2,9 @@ package utils
 
 import (
 	"fmt"
-	"log"
 	"onchain-energe-SRSI/telegram"
 	"onchain-energe-SRSI/types"
-	"os"
 )
-
-var progressLogger = log.New(os.Stdout, "[Screener] ", log.LstdFlags)
 
 // AnaylySymbol  一次性检查1h, 15m,5m,1m
 func AnaylySymbol(data *types.TokenData, config *types.Config, resultsChan chan types.TokenItem, wait_sucess_token, chatID string) {

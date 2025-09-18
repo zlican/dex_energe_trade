@@ -21,12 +21,12 @@ import (
 )
 
 var (
-	wg             sync.WaitGroup
 	config         *types.Config
 	tokenDataMap   = make(map[string]*types.TokenData)
 	tokenDataMutex sync.Mutex // 用于保护 tokenDataMap
 	progressLogger = log.New(os.Stdout, "[Screener] ", log.LstdFlags)
 	runScanRunning int32
+	banSymbols     = []string{} //封禁区
 )
 
 func main() {
@@ -49,6 +49,16 @@ func main() {
 		os.Exit(1)
 	}
 	resultsChan := make(chan types.TokenItem, 100)
+
+	//获取封禁区
+	chBanList := make(chan []string, 10)
+	banSymbols = utils.GetBanList()
+	go utils.StartBanListFetcher(chBanList)
+	go func() {
+		for Symbols := range chBanList {
+			banSymbols = Symbols
+		}
+	}()
 
 	go func() {
 		// ✅ 首次立即执行
@@ -124,6 +134,16 @@ func runScan(resultsChan chan types.TokenItem) {
 
 	for _, token := range tokenList {
 		symbol := token.Symbol
+		banBool := false
+		for _, s := range banSymbols {
+			if symbol == s {
+				banBool = true
+				break
+			}
+		}
+		if banBool {
+			continue
+		}
 
 		// 确保 tokenDataMap 里有对应结构（初始化一次）
 		tokenDataMutex.Lock()
