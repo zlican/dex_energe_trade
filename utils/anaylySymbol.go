@@ -58,11 +58,11 @@ func AnaylySymbol(data *types.TokenData, config *types.Config, resultsChan chan 
 	}
 	price := closesM15[len(closesM15)-2]
 	_, EMA25M15NOW := CalculateEMA(closesM15, 25)
-	golden := IsGolden(closesM15, 6, 13, 5)
+	goldenORdifup := IsSmallTFUP(closesM15, 6, 13, 5)
 	DIFM15UP := IsDIFUP(closesM15, 6, 13, 5)
 
 	MACDM15 := "RANGE"
-	if price > EMA25M15NOW && golden && DIFM15UP {
+	if price > EMA25M15NOW && DIFM15UP && goldenORdifup {
 		MACDM15 = "BUYMACD"
 	}
 	if MACDM15 != validMACD {
