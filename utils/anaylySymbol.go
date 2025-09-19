@@ -31,7 +31,7 @@ func AnaylySymbol(data *types.TokenData, config *types.Config, resultsChan chan 
 	if err != nil {
 		fmt.Println(err)
 	}
-	priceBIG := closesH1[len(closesH1)-1]
+	priceBIG := closesH1[len(closesH1)-2]
 	_, EMA25H1 := CalculateEMA(closesH1, 25)
 	MA60H1 := CalculateMA(closesH1, 60)
 	DIFH1 := IsDIFUP(closesH1, 6, 13, 5)
@@ -56,7 +56,7 @@ func AnaylySymbol(data *types.TokenData, config *types.Config, resultsChan chan 
 	if err != nil {
 		fmt.Println(err)
 	}
-	price := closesM15[len(closesM15)-1]
+	price := closesM15[len(closesM15)-2]
 	_, EMA25M15NOW := CalculateEMA(closesM15, 25)
 	golden := IsGolden(closesM15, 6, 13, 5)
 	DIFM15UP := IsDIFUP(closesM15, 6, 13, 5)
@@ -81,7 +81,7 @@ func AnaylySymbol(data *types.TokenData, config *types.Config, resultsChan chan 
 	if err != nil {
 		fmt.Println(err)
 	}
-	priceM5 := closesM5[len(closesM5)-1]
+	priceM5 := closesM5[len(closesM5)-2]
 	ma60M5 := CalculateMA(closesM5, 60)
 	_, ema25M5Now := CalculateEMA(closesM5, 25)
 	MACDSmallUP := IsSmallTFUP(closesM5, 6, 13, 5)
@@ -106,7 +106,7 @@ func AnaylySymbol(data *types.TokenData, config *types.Config, resultsChan chan 
 	if err != nil {
 		fmt.Println(err)
 	}
-	priceM1 := closesM1[len(closesM1)-1]
+	priceM1 := closesM1[len(closesM1)-2]
 	ma60M1 := CalculateMA(closesM1, 60)
 	XSTRONGUPM1 := XSTRONGUP(closesM1, 6, 13, 5)
 
