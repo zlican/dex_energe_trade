@@ -96,8 +96,8 @@ func main() {
 }
 
 func runScan(resultsChan chan types.TokenItem) {
-	//7秒获K
-	time.Sleep(7 * time.Second)
+	//10秒获K
+	time.Sleep(10 * time.Second)
 	fmt.Println("开始执行 runScan...")
 
 	var (
