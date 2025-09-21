@@ -19,10 +19,36 @@ func AnaylySymbol(data *types.TokenData, config *types.Config, resultsChan chan 
 	tokenItem := data.TokenItem
 	validMACD := "BUYMACD"
 
+	//4小时检查
+	optionsH4 := map[string]string{
+		"aggregate":               "4",
+		"limit":                   "200",
+		"token":                   "base",
+		"currency":                "usd",
+		"include_empty_intervals": "true",
+	}
+
+	closesH4, err := GetClosesByAPI(tokenItem, config, optionsH4, "hour")
+	if err != nil {
+		fmt.Println(err)
+	}
+	price := closesH4[len(closesH4)-2]
+	_, EMA25H4NOW := CalculateEMA(closesH4, 25)
+	goldenORdifupH4 := IsSmallTFUP(closesH4, 6, 13, 5)
+	DIFH4UP := IsDIFUP(closesH4, 6, 13, 5)
+
+	MACDH4 := "RANGE"
+	if price > EMA25H4NOW && DIFH4UP && goldenORdifupH4 {
+		MACDH4 = "BUYMACD"
+	}
+	if MACDH4 != validMACD {
+		return
+	}
+
 	//1小时检查
 	optionsH1 := map[string]string{
 		"aggregate":               "1",
-		"limit":                   "200", // 只获取最新的几条数据即可
+		"limit":                   "200",
 		"token":                   "base",
 		"currency":                "usd",
 		"include_empty_intervals": "true",
@@ -31,12 +57,9 @@ func AnaylySymbol(data *types.TokenData, config *types.Config, resultsChan chan 
 	if err != nil {
 		fmt.Println(err)
 	}
-	priceBIG := closesH1[len(closesH1)-2]
-	_, EMA25H1 := CalculateEMA(closesH1, 25)
-	MA60H1 := CalculateMA(closesH1, 60)
 	DIFH1 := IsDIFUP(closesH1, 6, 13, 5)
 	MACDH1 := "RANGE"
-	if priceBIG > EMA25H1 && priceBIG > MA60H1 && DIFH1 { //1H : EMA25 + DIF
+	if DIFH1 { //1H :DIF
 		MACDH1 = "BUYMACD"
 	}
 	if MACDH1 != validMACD {
@@ -56,7 +79,7 @@ func AnaylySymbol(data *types.TokenData, config *types.Config, resultsChan chan 
 	if err != nil {
 		fmt.Println(err)
 	}
-	price := closesM15[len(closesM15)-2]
+	price = closesM15[len(closesM15)-2]
 	_, EMA25M15NOW := CalculateEMA(closesM15, 25)
 	goldenORdifup := IsSmallTFUP(closesM15, 6, 13, 5)
 	DIFM15UP := IsDIFUP(closesM15, 6, 13, 5)
@@ -115,7 +138,7 @@ func AnaylySymbol(data *types.TokenData, config *types.Config, resultsChan chan 
 		MACDM1 = "XBUY"
 	}
 
-	if MACDH1 == validMACD && MACDM15 == validMACD && MACDM5 == validMACD && MACDM1 == "XBUY" {
+	if MACDH4 == validMACD && MACDH1 == validMACD && MACDM15 == validMACD && MACDM5 == validMACD && MACDM1 == "XBUY" {
 		msg := fmt.Sprintf("%s%s\n📬 `%s`", tokenItem.Emoje, tokenItem.Symbol, tokenItem.Address)
 		// 错误注释：Telegram 发送失败依赖其内置重试机制，失败后跳过状态更新
 		if err := telegram.SendMarkdownMessage(wait_sucess_token, chatID, msg); err != nil {
