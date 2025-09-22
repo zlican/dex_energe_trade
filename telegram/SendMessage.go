@@ -33,14 +33,6 @@ var (
 		messages: make([]SavedMessage, 0, 100),
 		maxSize:  100,
 	}
-	savedMessagesWaiting = struct {
-		sync.RWMutex
-		messages []SavedMessage
-		maxSize  int
-	}{
-		messages: make([]SavedMessage, 0, 100),
-		maxSize:  100,
-	}
 )
 
 // SendMessage 发送普通文本 Telegram 消息，包含指数退避重试
@@ -214,6 +206,7 @@ func AddMessage(msg SavedMessage) {
 		savedMessages.messages = savedMessages.messages[1:]
 	}
 	savedMessages.messages = append(savedMessages.messages, msg)
+	go AnalyzeNewMessage(msg)
 }
 
 // GetLatestMessages 返回最新n条，倒序
