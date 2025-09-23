@@ -34,11 +34,10 @@ func AnaylySymbol(data *types.TokenData, config *types.Config, resultsChan chan 
 	}
 	price := closesH4[len(closesH4)-2]
 	_, EMA25H4NOW := CalculateEMA(closesH4, 25)
-	goldenORdifupH4 := IsSmallTFUP(closesH4, 6, 13, 5)
-	DIFH4UP := IsDIFUP(closesH4, 6, 13, 5)
+	ColANDDIFUPH4 := ColANDDIFUP(closesH4, 6, 13, 5)
 
 	MACDH4 := "RANGE"
-	if price > EMA25H4NOW && DIFH4UP && goldenORdifupH4 {
+	if price > EMA25H4NOW && ColANDDIFUPH4 {
 		MACDH4 = "BUYMACD"
 	}
 	if MACDH4 != validMACD {
@@ -81,11 +80,11 @@ func AnaylySymbol(data *types.TokenData, config *types.Config, resultsChan chan 
 	}
 	price = closesM15[len(closesM15)-2]
 	_, EMA25M15NOW := CalculateEMA(closesM15, 25)
-	goldenORdifup := IsSmallTFUP(closesM15, 6, 13, 5)
+	ColANDDIFUPM15 := ColANDDIFUP(closesM15, 6, 13, 5)
 	DIFM15UP := IsDIFUP(closesM15, 6, 13, 5)
 
 	MACDM15 := "RANGE"
-	if price > EMA25M15NOW && DIFM15UP && goldenORdifup {
+	if price > EMA25M15NOW && DIFM15UP && ColANDDIFUPM15 {
 		MACDM15 = "BUYMACD"
 	}
 	if MACDM15 != validMACD {
@@ -106,11 +105,10 @@ func AnaylySymbol(data *types.TokenData, config *types.Config, resultsChan chan 
 	}
 	priceM5 := closesM5[len(closesM5)-2]
 	ma60M5 := CalculateMA(closesM5, 60)
-	_, ema25M5Now := CalculateEMA(closesM5, 25)
-	MACDSmallUP := IsSmallTFUP(closesM5, 6, 13, 5)
+	DIFUPM5 := IsDIFUP(closesM5, 6, 13, 5)
 
 	MACDM5 := "RANGE"
-	if priceM5 > ema25M5Now && priceM5 > ma60M5 && MACDSmallUP {
+	if priceM5 > ma60M5 && DIFUPM5 {
 		MACDM5 = "BUYMACD"
 	}
 	if MACDM5 != validMACD {
@@ -131,10 +129,11 @@ func AnaylySymbol(data *types.TokenData, config *types.Config, resultsChan chan 
 	}
 	priceM1 := closesM1[len(closesM1)-2]
 	ma60M1 := CalculateMA(closesM1, 60)
-	XSTRONGUPM1 := XSTRONGUP(closesM1, 6, 13, 5)
+	DIFUPM1 := IsDIFUP(closesM1, 6, 13, 5)
+	ColANDDIFUPM1 := ColANDDIFUPMicro(closesM1, 6, 13, 5)
 
 	MACDM1 := ""
-	if priceM1 > ma60M1 && XSTRONGUPM1 {
+	if priceM1 > ma60M1 && DIFUPM1 && ColANDDIFUPM1 {
 		MACDM1 = "XBUY"
 	}
 
